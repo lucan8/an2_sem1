@@ -1,0 +1,1 @@
+SELECT nume, job FROM angajati_pnu WHERE cod_sef IS NULL;
