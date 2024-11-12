@@ -1,0 +1,15 @@
+INSERT INTO counties VALUES(1, 'Alba');
+INSERT INTO counties VALUES(2, 'Arad');
+INSERT INTO counties VALUES(3, 'Arges');
+INSERT INTO counties VALUES(4, 'Bacau');
+INSERT INTO counties VALUES(5, 'Brasov');
+INSERT INTO counties VALUES(6, 'Bucuresti');
+INSERT INTO counties VALUES(7, 'Buzau');
+INSERT INTO counties VALUES(8, 'Calarasi');
+INSERT INTO counties VALUES(9, 'Caras-Severin');
+INSERT INTO counties VALUES(10, 'Cluj');
+INSERT INTO counties VALUES(11, 'Dambovita');
+INSERT INTO counties VALUES(12, 'Dolj');
+INSERT INTO counties VALUES(13, 'Galati');
+INSERT INTO counties VALUES(14, 'Vrancea');
+INSERT INTO counties VALUES(15, 'Cosntanta');
