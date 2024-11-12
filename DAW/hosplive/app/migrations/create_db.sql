@@ -16,16 +16,11 @@ GRANT SELECT ON HospitalDB.specializations TO 'hospital_user'@'127.0.0.1'; */
 /* GRANT INSERT, DELETE, UPDATE ON HospitalDB.users TO 'hospital_user'@'127.0.0.1';
 GRANT INSERT, DELETE, UPDATE ON HospitalDB.appointments TO 'hospital_user'@'127.0.0.1'; */
 /* USE HospitalDB; */
+CREATE TABLE genders(
+    gender_id INTEGER AUTO_INCREMENT,
+    gender_name VARCHAR(20) NOT NULL UNIQUE,
 
-CREATE TABLE users(
-    user_id INTEGER AUTO_INCREMENT,
-    user_name VARCHAR(20) NOT NULL,
-    password varchar(100) NOT NULL,
-    email varchar(100) NOT NULL UNIQUE,
-    role_id INTEGER NOT NULL,
-    
-    CONSTRAINT users_pk PRIMARY KEY(user_id)
-    CONSTRAINT users_role_fk FOREIGN KEY(role_id) REFERENCES roles(role_id) ON DELETE RESTRICT
+    CONSTRAINT genders_pk PRIMARY KEY(gender_id)
 );
 
 CREATE TABLE roles(
@@ -33,6 +28,25 @@ CREATE TABLE roles(
     role_name VARCHAR(20) NOT NULL UNIQUE,
     
     CONSTRAINT roles_pk PRIMARY KEY(role_id)
+);
+
+CREATE TABLE users(
+    user_id INTEGER AUTO_INCREMENT,
+    hid VARCHAR(10) NOT NULL UNIQUE ,
+    birth_date DATE NOT NULL,
+    gender_id INTEGER NOT NULL,
+    first_name VARCHAR(20) NOT NULL,
+    last_name VARCHAR(20) NOT NULL,
+    phone_number CHAR(10) NOT NULL,
+
+    user_name VARCHAR(20) NOT NULL,
+    password varchar(100) NOT NULL,
+    email varchar(100) NOT NULL UNIQUE,
+    role_id INTEGER NOT NULL,
+    
+    CONSTRAINT users_pk PRIMARY KEY(user_id),
+    CONSTRAINT users_role_fk FOREIGN KEY(role_id) REFERENCES roles(role_id) ON DELETE RESTRICT,
+    CONSTRAINT users_gender_fk FOREIGN KEY(gender_id) REFERENCES genders(gender_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE counties(
