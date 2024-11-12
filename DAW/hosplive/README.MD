@@ -24,6 +24,8 @@ This app represents a (imaginary) hospital chain called Hosplive and was inspire
 
 `utils`: contains helper functions
 
+`docs`: currently contains the database diagrams
+
 ## App description
 
 ### Database
@@ -47,14 +49,5 @@ Possible roles
 - hospital
 
 ### Main functionality
+
 Logged in the client can make an appointment at any of the hospitals available throught the country to any of the specialized medics
-
-
-
-
-
-
-
-
-
-
