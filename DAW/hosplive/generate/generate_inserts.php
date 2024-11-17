@@ -3,7 +3,8 @@
     require_once "../exceptions/FileWriteException.php";
     $tables = [
         "rooms", "counties", "medics",
-        "hospitals", "hospitals_medics", "specializations"
+        "hospitals", "hospitals_medics", "specializations",
+        "genders"
       ];
     generateWriteInserts($tables);
     
