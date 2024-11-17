@@ -15,14 +15,11 @@
             <input type="text" placeholder="County" id="county_input">
         </div>
         <div id="spec_div">
-            <input type="text" placeholder="Specialization" id="specialization_input">
+            <input type="text" placeholder="Specialization" id="specialization_input" disabled>
         </div>
-        <!-- <select required id="doctor_select">
-            <option value="Doctor" selected>Doctor</option>
-            <?php foreach ($doctors as $doctor) : ?>
-                <option value=<?= $doctor["name"] ?>><?= $doctor["name"] ?>: <?= $doctor["years_exp"] ?> years experience</option>
-            <?php endforeach; ?>
-        </select> -->
+        <select id="medic_select" disabled>
+            <option selected>Select medic</option>
+        </select>
         <input type="date" required id="input_date">
         <input type="submit" value="Make Appointment" id="submit_button">
     </form>
@@ -35,38 +32,58 @@
     let counties = counties_data.map(county => county.county_name);
 
     let spec_div = document.getElementById("spec_div");
-    let specialization_input = document.getElementById("specialization_input");
+    let spec_input = document.getElementById("specialization_input");
 
-    let specializations_data = <?= $specializations ?>;
-    let specializations = specializations_data.map(spec => spec.specialization_name);
+    let spec_data = <?= $specializations ?>;
+    //let specializations = specializations_data.map(spec => spec.specialization_name);
+    let specializations = spec_data;
 
-    let doctor_select = document.getElementById("doctor_select");
+    let medic_select = document.getElementById("medic_select");
     let submit_input = document.getElementById("submit_button");
     
     county_input.addEventListener("input", function(event){
-        autoComplete(county_div, event.target, counties);
+        // If inputed county is valid, we enable the specialization input
+        if (counties.includes(event.target.value))
+            spec_input.disabled = false;
+        else{
+            spec_input.value = "";
+            removeOptions(spec_div);
+            spec_input.disabled = true;
+        }
+
+        makeSuggestions(county_div, event.target, counties, () => spec_input.disabled = false);
     });
 
-    specialization_input.addEventListener("input", function(event){
-        autoComplete(spec_div, event.target, specializations);
+    spec_input.addEventListener("input", function(event){
+        input_specialization = event.target.value;
+
+        if (specializations.includes(input_specialization))
+            fillMedicsSelect();
+        else{
+            removeOptions(medic_select);
+            medic_select.disabled = true;
+        }
+
+        makeSuggestions(spec_div, event.target, specializations, fillMedicsSelect);
     });
 
     //Create divs for each option that starts with the input value
-    function autoComplete(option_div, input_elem, data_list){
+    function makeSuggestions(option_div, input_elem, data_list, sugg_onclick_additional_func){
         removeOptions(option_div);
 
         let input_data = input_elem.value;
-        if (input_data === "") return;
+        if (input_data == "") return;
 
         // Keep only the data that start with the input value
         let filtered_data = data_list.filter(data => data.toLowerCase().startsWith(input_data.toLowerCase()));
         // Create div for each option and append it to specialzied div
-        filtered_data.forEach(data => addOption(option_div, input_elem, data));
+        filtered_data.forEach(data => addSuggestion(option_div, input_elem, data, sugg_onclick_additional_func));
     }
 
     //Create an option div and append it to the options div
-    //On click, added div sets the input value to the option value and removes all other options
-    function addOption(option_div, input_elem, option_data){
+    //On click, added div sets the input value to the option value, removes all other options and
+    //calls the additional function if it is not NULL
+    function addSuggestion(option_div, input_elem, option_data, sugg_onclick_additional_func){
         let option = document.createElement("div");
         let option_text = document.createTextNode(option_data);
 
@@ -76,14 +93,34 @@
         option.addEventListener("click", function(){
             input_elem.value = option_data;
             removeOptions(option_div);
+            if (sugg_onclick_additional_func != null)
+                sugg_onclick_additional_func();
         });
     }
 
     //Remove all options from options_div except the first one
-    function removeOptions(options_div){
-        while(options_div.childElementCount > 1){
-            options_div.removeChild(options_div.lastChild);
+    function removeOptions(options_container){
+        while(options_container.childElementCount > 1){
+            options_container.removeChild(options_container.lastChild);
         }
-    }  
+    }
+
+    //Add medic options to the medic select element, value is medic id, text is medic name
+    function addMedicOption(medic){
+        let option = document.createElement("option");
+        option.value = medic.medic_id;
+        option.text = medic.medic_name;
+        medic_select.appendChild(option);
+    }
+
+    //Fetches the medics with the inputed county and specialization
+    // and adds them to the medic select element
+    function fillMedicsSelect(){
+        fetch('getMedics?county=' + county_input.value + '&specialization=' + spec_input.value)
+                .then(response => {    
+                    response.json().then(medics => medics.forEach(medic => addMedicOption(medic)));
+                    medic_select.disabled = false;
+                });
+    }
 </script>
 </html>
