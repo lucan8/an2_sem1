@@ -1,6 +1,7 @@
 <?php
 $routes = [
     "hosplive/index" => ["Controller", "index"],
+    "hosplive/make_appointment" => ["Controller", "make_appointment"],
 ];
 
 class Router {
