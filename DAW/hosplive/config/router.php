@@ -1,7 +1,8 @@
 <?php
 $routes = [
     "hosplive/index" => ["Controller", "index"],
-    "hosplive/make_appointment" => ["Controller", "make_appointment"],
+    "hosplive/makeAppointment" => ["Controller", "makeAppointment"],
+    "hosplive/getMedics" => ["Controller", "getMedics"],
 ];
 
 class Router {
@@ -10,6 +11,7 @@ class Router {
     public function __construct() {
         // Get the current URI
         $this->uri = trim($_SERVER["REQUEST_URI"], "/");
+        $this->uri = explode("?", $this->uri)[0];
     }
 
     public function direct() {
