@@ -10,48 +10,78 @@
     <title>Make Appointments</title>
 </head>
 <body>
-    <form>
+    <div>
         <div id="county_div">
-            <input type="text" placeholder="County" id="county_input">
+            <input type="text" placeholder="County" id="county_input" list="county_list">
+            <datalist id="county_list">
+                <option disabled>Select County</option>
+            </datalist>
         </div>
+
         <div id="spec_div">
-            <input type="text" placeholder="Specialization" id="specialization_input" disabled>
+            <input type="text" placeholder="Specialization" id="specialization_input" list="spec_list" disabled>
+            <datalist id="spec_list">
+                <option disabled>Select Specialization</option>
+            </datalist>
         </div>
+
         <select id="medic_select" disabled>
             <option selected>Select medic</option>
         </select>
-        <input type="date" required id="input_date">
-        <input type="submit" value="Make Appointment" id="submit_button">
+
+        <input type="date" required id="date_input" min="2018-01-01">
+
+        <div>
+            <input type="time" required id="time_input" list="time_list">
+            <datalist id="time_list">
+                <option value="08:00"></option>
+            </datalist>
+        </div>
+        <input type="submit" value="Make Appointment" id="fill_form_btn">
+    </div>
+
+    <!-- Form with actual data -->
+    <form action="makeAppointment" method="post" id="appointment_form" hidden>
+        <input type="number" id="hospital_id" name="county_id">
+        <input type="number" id="spec_id" name="spec_id">
+        <input type="number" id="medic_id" name="medic_id">
+        <input type="date" id="appointment_date" name="appointment_date">
+        <input type="time" id="appointment_time" name="appointment_time">
     </form>
 </body>
 <script>
-    let county_div = document.getElementById("county_div");
+    //TO DO: Make date dependent on medic and time dependent on date
+    let county_sugg = document.getElementById("county_list");
     let county_input = document.getElementById("county_input");
 
-    let counties_data = <?= $counties ?>;
-    let counties = counties_data.map(county => county.county_name);
+    let hospitals_data = <?= $hospitals ?>;
+    let counties = Object.keys(hospitals_data);
 
-    let spec_div = document.getElementById("spec_div");
+    let spec_sugg = document.getElementById("spec_list");
     let spec_input = document.getElementById("specialization_input");
 
     let spec_data = <?= $specializations ?>;
-    //let specializations = specializations_data.map(spec => spec.specialization_name);
-    let specializations = spec_data;
+    let specializations = spec_data.map(spec => spec.specialization_name);
 
     let medic_select = document.getElementById("medic_select");
-    let submit_input = document.getElementById("submit_button");
+
+    let date_input = document.getElementById("date_input");
+    date_input.min = toDateInputValue(new Date());
+
+    let time_input = document.getElementById("time_input");
+    let fill_form_btn = document.getElementById("fill_form_btn");
+    
     
     county_input.addEventListener("input", function(event){
-        // If inputed county is valid, we enable the specialization input
-        if (counties.includes(event.target.value))
+        if (counties.includes(event.target.value)){
             spec_input.disabled = false;
+        }
         else{
-            spec_input.value = "";
-            removeOptions(spec_div);
-            spec_input.disabled = true;
+            resetMedics();
+            resetSpecializations();
         }
 
-        makeSuggestions(county_div, event.target, counties, () => spec_input.disabled = false);
+        makeSuggestions(county_sugg, event.target, counties, () => spec_input.disabled = false);
     });
 
     spec_input.addEventListener("input", function(event){
@@ -59,17 +89,23 @@
 
         if (specializations.includes(input_specialization))
             fillMedicsSelect();
-        else{
-            removeOptions(medic_select);
-            medic_select.disabled = true;
-        }
+        else
+            resetMedics();
 
-        makeSuggestions(spec_div, event.target, specializations, fillMedicsSelect);
+        makeSuggestions(spec_sugg, event.target, specializations, fillMedicsSelect);
+    });
+
+    fill_form_btn.addEventListener("click", function(){
+        let form = document.getElementById("appointment_form");
+
+        fillForm();
+
+        form.submit();
     });
 
     //Create divs for each option that starts with the input value
-    function makeSuggestions(option_div, input_elem, data_list, sugg_onclick_additional_func){
-        removeOptions(option_div);
+    function makeSuggestions(sugg_list, input_elem, data_list, sugg_onclick_additional_func){
+        removeOptions(sugg_list);
 
         let input_data = input_elem.value;
         if (input_data == "") return;
@@ -83,16 +119,17 @@
     //Create an option div and append it to the options div
     //On click, added div sets the input value to the option value, removes all other options and
     //calls the additional function if it is not NULL
-    function addSuggestion(option_div, input_elem, option_data, sugg_onclick_additional_func){
-        let option = document.createElement("div");
-        let option_text = document.createTextNode(option_data);
+    function addSuggestion(suggestion_container, input_elem, option_data, sugg_onclick_additional_func){
+        let option = document.createElement("option");
+        option.value = option_data;
+        //let option_text = document.createTextNode(option_data);
 
-        option.appendChild(option_text);
-        option_div.appendChild(option);
+        //option.appendChild(option_text);
+        suggestion_container.appendChild(option);
 
         option.addEventListener("click", function(){
             input_elem.value = option_data;
-            removeOptions(option_div);
+            removeOptions(suggestion_container);
             if (sugg_onclick_additional_func != null)
                 sugg_onclick_additional_func();
         });
@@ -116,11 +153,41 @@
     //Fetches the medics with the inputed county and specialization
     // and adds them to the medic select element
     function fillMedicsSelect(){
-        fetch('getMedics?county=' + county_input.value + '&specialization=' + spec_input.value)
+        fetch('getMedics?hospital_id=' + hospitals_data[county_input.value] + '&specialization=' + spec_input.value)
                 .then(response => {    
                     response.json().then(medics => medics.forEach(medic => addMedicOption(medic)));
                     medic_select.disabled = false;
                 });
+    }
+
+    //Fills the hidden form with the inputed data
+    function fillForm(){
+        document.getElementById("county_id").value = counties_data.find(county => county.county_name == county_input.value).county_id;
+        document.getElementById("spec_id").value = spec_data.find(spec => spec.specialization_name == spec_input.value).specialization_id;
+
+        document.getElementById("medic_id").value = medic_select.value;
+
+        document.getElementById("appointment_date").value = date_input.value;
+        document.getElementById("appointment_time").value = time_input.value;
+    }
+
+    function toDateInputValue(dateObject){
+        let local = new Date(dateObject);
+        local.setMinutes(dateObject.getMinutes() - dateObject.getTimezoneOffset());
+        return local.toJSON().slice(0,10);
+    }
+
+    function resetSpecializations(){
+        if (spec_input.disabled) return;
+        removeOptions(spec_sugg);
+        spec_input.value = "";
+        spec_input.disabled = true;
+    }
+
+    function resetMedics(){
+        if (medic_select.disabled) return;
+        removeOptions(medic_select);
+        medic_select.disabled = true;
     }
 </script>
 </html>
