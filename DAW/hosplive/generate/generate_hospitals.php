@@ -2,9 +2,8 @@
     require_once "../exceptions/FileOpenException.php";
     require_once "../exceptions/FileWriteException.php";
     require_once "constants.php";
-    $constants = $constants;
     
-    generateHospitals($constants["NR_HOSPITALS"], $constants["NR_ROOMS"]);
+    generateHospitals($constants["NR_COUNTIES"], $constants["NR_ROOMS_HOSPITAL"]);
 
     function generateHospitals($nr_hospitals, $nr_rooms){
         //Opening hospitals file

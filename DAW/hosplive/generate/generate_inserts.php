@@ -1,12 +1,8 @@
 <?php
     require_once "../exceptions/FileOpenException.php";
     require_once "../exceptions/FileWriteException.php";
-    $tables = [
-        "rooms", "counties", "medics",
-        "hospitals", "hospitals_medics", "specializations",
-        "genders"
-      ];
-    generateWriteInserts($tables);
+    require_once "constants.php";
+    generateWriteInserts($constants["INSERT_TABLES"]);
     
     //Generates and writes the insert queries for the tables in $tables
     //Each table will have different script file generated
@@ -29,7 +25,6 @@
 
                 # Generating and writing the insert script + the insert migration script
                 generateWriteInsert($table, $file_in, $file_out);
-                fwrite($file_out, "INSERT INTO migrations(migration_name) VALUES('" . $table . "_insert.sql');\n");
 
                 fclose($file_in);
                 fclose($file_out);

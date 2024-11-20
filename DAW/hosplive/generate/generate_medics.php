@@ -1,10 +1,7 @@
 <?php
     require_once "../exceptions/FileOpenException.php";
     require_once "../exceptions/FileWriteException.php";
-    require_once "../utils/parse.php";
     require_once "constants.php";
-
-    $constants = $constants;
 
     generateWriteMedics($constants["NR_HOSPITALS"], $constants["NR_SPECIALIZATIONS"],
                         $constants["MAX_NR_YEARS_EXP"], $constants["NR_HOSPITALS_PER_MEDIC"]);
