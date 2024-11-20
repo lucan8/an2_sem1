@@ -1,6 +1,6 @@
 /*Adaptare 10 
     Obtineti toate spitalele si listele cu medici ce lucreaza pentru acestea
-    Rezolva?i problema folosind:
+    Rezolvati problema folosind:
         a. cele trei tipuri de cursoare studiate;
         b. expresii cursor.
 */
@@ -92,5 +92,44 @@ BEGIN
             DBMS_OUTPUT.PUT_LINE('  Hospital with id ' || to_char(h_id.hospital_id) || ' has no medics');
         END IF;
     END LOOP;
+END;
+/
+
+/*Cursor expressions*/
+DECLARE
+TYPE refcursor IS REF CURSOR;
+CURSOR hidc IS
+    SELECT hospital_id,
+    CURSOR (SELECT m.medic_name
+            FROM hospitals_medics_t hm JOIN medics_t m
+            ON m.medic_id = hm.medic_id WHERE hm.hospital_id = h.hospital_id)
+    FROM hospitals_t h;
+    
+h_id hospitals_t.hospital_id%TYPE;
+medics_names_c refcursor;
+medic_name medics_t.medic_name%TYPE;
+has_medics BOOLEAN;
+BEGIN
+    OPEN hidc;
+    LOOP
+        FETCH hidc INTO h_id, medics_names_c;
+        EXIT WHEN hidc%NOTFOUND;
+        has_medics := False;
+        LOOP
+            FETCH medics_names_c INTO medic_name;
+            EXIT WHEN medics_names_c%NOTFOUND;
+            
+            if has_medics = False THEN
+                DBMS_OUTPUT.PUT_LINE('  Hospital with id ' || to_char(h_id) || ' medic list: ');
+                has_medics := True;
+            END IF;
+            
+            DBMS_OUTPUT.PUT_LINE('      ' || medic_name);
+        END LOOP;
+           IF has_medics = False THEN
+            DBMS_OUTPUT.PUT_LINE('  Hospital with id ' || to_char(h_id) || ' has no medics');
+        END IF;
+    END LOOP;
+    CLOSE hidc;
 END;
 /
