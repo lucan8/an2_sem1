@@ -34,7 +34,7 @@ def parseAndWriteCitiesData():
             new_line = ''
 
         # Writing the cities data
-        cities_out.write(str(city_id) + ' ' + split_city_county[0] + ' ' 
+        cities_out.write(str(city_id) + ', ' + split_city_county[0] + ', ' 
                          + str(set_counties[split_city_county[1]]) + new_line)
 
         city_id += 1
@@ -54,7 +54,7 @@ def printCountiesData(counties_out, set_counties):
         if i == len(set_counties) - 1:
             new_line = ''
         # Writing the counties data
-        counties_out.write(str(county_id) + ' ' + county_name + new_line)
+        counties_out.write(str(county_id) + ', ' + county_name + new_line)
         i += 1
 
 def parseAndWriteMedicsData():
