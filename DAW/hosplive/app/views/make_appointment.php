@@ -53,15 +53,11 @@
     //TO DO: Make date dependent on medic and time dependent on date
     let county_sugg = document.getElementById("county_list");
     let county_input = document.getElementById("county_input");
-
     let hospitals_data = <?= $hospitals ?>;
-    let counties = Object.keys(hospitals_data);
 
     let spec_sugg = document.getElementById("spec_list");
     let spec_input = document.getElementById("specialization_input");
-
     let spec_data = <?= $specializations ?>;
-    let specializations = spec_data.map(spec => spec.specialization_name);
 
     let medic_select = document.getElementById("medic_select");
 
@@ -73,7 +69,8 @@
     
     
     county_input.addEventListener("input", function(event){
-        if (counties.includes(event.target.value)){
+        let input_county = event.target.value;
+        if (hospitals_data.hasOwnProperty(input_county)){
             spec_input.disabled = false;
         }
         else{
@@ -81,18 +78,18 @@
             resetSpecializations();
         }
 
-        makeSuggestions(county_sugg, event.target, counties, () => spec_input.disabled = false);
+        makeSuggestions(county_sugg, event.target, hospitals_data, () => spec_input.disabled = false);
     });
 
     spec_input.addEventListener("input", function(event){
         input_specialization = event.target.value;
 
-        if (specializations.includes(input_specialization))
+        if (spec_data.hasOwnProperty(input_specialization))
             fillMedicsSelect();
         else
             resetMedics();
 
-        makeSuggestions(spec_sugg, event.target, specializations, fillMedicsSelect);
+        makeSuggestions(spec_sugg, event.target, spec_data, fillMedicsSelect);
     });
 
     fill_form_btn.addEventListener("click", function(){
@@ -119,13 +116,8 @@
     //Create an option div and append it to the options div
     //On click, added div sets the input value to the option value, removes all other options and
     //calls the additional function if it is not NULL
-    function addSuggestion(suggestion_container, input_elem, option_data, sugg_onclick_additional_func){
-        let option = document.createElement("option");
-        option.value = option_data;
-        //let option_text = document.createTextNode(option_data);
-
-        //option.appendChild(option_text);
-        suggestion_container.appendChild(option);
+    function addSuggestion(sugg_container, input_elem, option_value, option_text, sugg_onclick_additional_func){
+        let option = addOption(sugg_container, option_value, option_text);
 
         option.addEventListener("click", function(){
             input_elem.value = option_data;
@@ -142,12 +134,14 @@
         }
     }
 
-    //Add medic options to the medic select element, value is medic id, text is medic name
-    function addMedicOption(medic){
+    //Adds an option to option cont with the given value and text and returns the created option
+    function addOption(option_cont, option_value, option_text){
         let option = document.createElement("option");
-        option.value = medic.medic_id;
-        option.text = medic.medic_name;
-        medic_select.appendChild(option);
+        option.value = option_value;
+        option.text = option_text;
+        option_cont.appendChild(option);
+
+        return option;
     }
 
     //Fetches the medics with the inputed county and specialization
@@ -155,7 +149,9 @@
     function fillMedicsSelect(){
         fetch('getMedics?hospital_id=' + hospitals_data[county_input.value] + '&specialization=' + spec_input.value)
                 .then(response => {    
-                    response.json().then(medics => medics.forEach(medic => addMedicOption(medic)));
+                    response.json().then(medics => medics.forEach(medic => addOption(medic_select, 
+                                                                                     medic.medic_id,
+                                                                                     medic.medic_name)));
                     medic_select.disabled = false;
                 });
     }
