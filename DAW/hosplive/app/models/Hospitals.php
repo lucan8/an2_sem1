@@ -2,9 +2,9 @@
     require_once 'Entity.php';
 
     class HospitalsData extends EntityData{
-        public int|null $hospital_id;
-        public int|null $county_id;
-        public string|null $phone_number;
+        public int $hospital_id;
+        public int $county_id;
+        public string $phone_number;
 
         function __construct(){}
         public function set(int $hospital_id, int $county_id, string $phone_number){
@@ -15,6 +15,8 @@
     }
 
     class Hospitals extends Entity{
+        public const OPENING_TIME = "08:00:00";
+        public const CLOSING_TIME = "22:00:00";
         // Returns hospital from passed county
         public static function getByCounty(int $county_id): HospitalsData{
             $query = "SELECT * FROM " . static::class . " WHERE county_id = ?";
