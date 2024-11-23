@@ -4,17 +4,14 @@
         public int $county_id;
         public string $county_name;
 
-        function __construct(int $county_id, string $county_name){
+        function __construct(){}
+        public function set(int $county_id, string $county_name){
             $this->county_id = $county_id;
             $this->county_name = $county_name;
         }
     }
 
     class Counties extends Entity{
-        public static function getCounties(){
-            return [new CountiesData(1, "Nairobi"), new CountiesData(2, "Mombasa"), new CountiesData(3, "Kisumu"), new CountiesData(4, "Nakuru")];
-        }
-
         public static function getById(int $county_id): CountiesData{
             $query = "SELECT * FROM " . static::class . " WHERE county_id = ?";
             self :: printQuery($query, [$county_id]);
