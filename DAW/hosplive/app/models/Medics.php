@@ -6,7 +6,8 @@
         public int $specialization_id;
         public int $years_exp;
 
-        function __construct(int $medic_id, string $medic_name, int $specialization_id, int $years_exp){
+        function __construct(){}
+        public function set(int $medic_id, string $medic_name, int $specialization_id, int $years_exp){
             $this->medic_id = $medic_id;
             $this->medic_name = $medic_name;
             $this->specialization_id = $specialization_id;
@@ -24,7 +25,22 @@
 
             $stm->execute([$spec_id]);
             return $stm->fetchAll();
-            //return [new MedicsData(1, "Dr. John Doe", 1, 5), new MedicsData(2, "Dr. Jane Doe", 2, 10), new MedicsData(3, "Dr. James Doe", 3, 15), new MedicsData(4, "Dr. Janet Doe", 4, 20)];
+        }
+
+        //Returns an array of medics from a given hospital with a given specialization
+        public static function getByHospAndSpec($hosp_id, $spec_id): array{
+            $query = "SELECT m.medic_name, m.medic_id, m.specialization_id
+                      FROM " . static::class . " m JOIN hospitals_medics hm ON m.medic_id = hm.medic_id
+                      WHERE hm.hospital_id = ? AND m.specialization_id = ?";
+
+            self::printQuery($query, [$hosp_id, $spec_id]);
+            
+            $stm = self::$conn->prepare($query);
+            $stm->setFetchMode(PDO::FETCH_CLASS, static::class . "Data");
+            
+            $stm->execute([$hosp_id, $spec_id]);
+            
+            return $stm->fetchAll();
         }
     }
 ?>
