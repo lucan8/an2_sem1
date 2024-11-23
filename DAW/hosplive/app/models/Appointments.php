@@ -9,8 +9,10 @@
         public string $appointment_time;  
         public int $duration;
 
-        function __construct(int|null $user_id, int $hospital_id, int $medic_id, int $room_id,
-                             string $appointment_date, string $appointment_time, int|null $duration){
+        function __construct(){}
+        public function set(int $user_id, int $hospital_id, int $medic_id, int $room_id,
+                            string $appointment_date, string $appointment_time,
+                            int $duration = Appointments :: DEFAULT_DURATION){
             $this->user_id = $user_id;
             $this->hospital_id = $hospital_id;
             $this->medic_id = $medic_id;
@@ -22,6 +24,8 @@
     }
 
     class Appointments extends Entity{
+        // Default duration of an appointment in minutes
+        public const DEFAULT_DURATION = 30;
         public static function insert(AppointmentsData $data){
             self::_insert($data);
         }
@@ -38,17 +42,43 @@
             $stm->fetchAll();
         }
         
-        //INCORRECT: For now returns appointments made at with hospital, medic and date
-        public static function getFreeTimeIntervals($hospital, $medic_id, $appointment_date){
-            $query = "SELECT appointment_time, duration FROM " . static::class . " WHERE hospital_id = ? AND medic_id = ? AND appointment_date = ?";
-            self::printQuery($query, [$hospital, $medic_id, $appointment_date]);
+        public static function getByHospMedDate($hospital_id, $medic_id, $appointment_date): array{
+            // Getting the appointments made at the given hospital, medic and date ordered by time
+            $query = "SELECT * FROM " . static::class . " WHERE hospital_id = ? AND medic_id = ?
+                      AND appointment_date = ? ORDER BY appointment_time";
+            self::printQuery($query, [$hospital_id, $medic_id, $appointment_date]);
 
             $stm = self::$conn->prepare($query);
             $stm->setFetchMode(PDO::FETCH_CLASS, static::class . "Data");
             
-            $stm->execute([$hospital, $medic_id, $appointment_date]);
+            $stm->execute([$hospital_id, $medic_id, $appointment_date]);
 
             return $stm->fetchAll();
+        }
+
+        public static function getFreeTimeIntervals($hospital, $medic_id, $appointment_date): array{
+            require_once "app/models/Hospitals.php";
+            // Getting the appointments made at the given hospital, medic and date
+            $res = self::getByHospMedDate($hospital, $medic_id, $appointment_date);
+
+            $start_time = new DateTime($appointment_date . Hospitals :: OPENING_TIME);
+            $end_time = new DateTime($appointment_date . Hospitals :: CLOSING_TIME);
+            
+            // Times open for appointments
+            $times = [];
+            // Index of the current appointment
+            $curr_index = 0;
+            
+            //Adding all possible appointments that are different from the ones already made
+            while ($start_time < $end_time){
+                if ($curr_index < count($res) && $start_time == $res[$curr_index]->appointment_time)
+                    $curr_index++;
+                else
+                    $times[] = $start_time;
+                    
+                $start_time->add(new DateInterval('PT' . $duration . 'M'));   
+            }
+            return $times;
         }
     }
 ?>
