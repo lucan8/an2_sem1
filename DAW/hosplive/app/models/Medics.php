@@ -29,7 +29,7 @@
 
         //Returns an array of medics from a given hospital with a given specialization
         public static function getByHospAndSpec($hosp_id, $spec_id): array{
-            $query = "SELECT m.medic_name, m.medic_id, m.specialization_id
+            $query = "SELECT m.medic_name, m.medic_id, m.specialization_id, m.years_exp
                       FROM " . static::class . " m JOIN hospitals_medics hm ON m.medic_id = hm.medic_id
                       WHERE hm.hospital_id = ? AND m.specialization_id = ?";
 
