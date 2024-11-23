@@ -26,15 +26,19 @@
         </div>
 
         <select id="medic_select" disabled>
-            <option selected>Select medic</option>
+            <option selected disabled>Select medic</option>
         </select>
 
-        <input type="date" required id="date_input" min="2018-01-01">
+        <!--Better solution here-->
+        <!--https://stackoverflow.com/questions/19655250/is-it-possible-to-disable-input-time-clear-button-->
+        <input type="date" required id="date_input">
 
         <div>
-            <input type="time" required id="time_input" list="time_list">
+            <input type="time" required id="time_input" list="time_list" min=<?= Hospitals :: OPENING_TIME ?> max=<?= Hospitals :: CLOSING_TIME ?> step=<?= Appointments :: DEFAULT_DURATION * 60 ?>>
             <datalist id="time_list">
-                <option value="08:00"></option>
+                <option disabled>Select Time</option>
+                <option value=<?= Hospitals :: OPENING_TIME ?>></option>
+                <option value=<?= Hospitals :: CLOSING_TIME ?>></option>
             </datalist>
         </div>
         <input type="submit" value="Make Appointment" id="fill_form_btn">
@@ -42,7 +46,7 @@
 
     <!-- Form with actual data -->
     <form action="makeAppointment" method="post" id="appointment_form" hidden>
-        <input type="number" id="hospital_id" name="county_id">
+        <input type="number" id="hospital_id" name="hospital_id">
         <input type="number" id="spec_id" name="spec_id">
         <input type="number" id="medic_id" name="medic_id">
         <input type="date" id="appointment_date" name="appointment_date">
@@ -50,14 +54,16 @@
     </form>
 </body>
 <script>
-    //TO DO: Make date dependent on medic and time dependent on date
     let county_sugg = document.getElementById("county_list");
     let county_input = document.getElementById("county_input");
-    let hospitals_data = <?= $hospitals ?>;
+    let counties_data = <?= $counties ?>;
+    let counties = counties_data.map(county => county.county_name);
+    let chosen_hospital_in = document.getElementById("hospital_id");
 
     let spec_sugg = document.getElementById("spec_list");
     let spec_input = document.getElementById("specialization_input");
     let spec_data = <?= $specializations ?>;
+    let specializations = spec_data.map(spec => spec.specialization_name);
 
     let medic_select = document.getElementById("medic_select");
 
@@ -65,31 +71,49 @@
     date_input.min = toDateInputValue(new Date());
 
     let time_input = document.getElementById("time_input");
+    let time_list = document.getElementById("time_list");
+
     let fill_form_btn = document.getElementById("fill_form_btn");
     
     
     county_input.addEventListener("input", function(event){
         let input_county = event.target.value;
-        if (hospitals_data.hasOwnProperty(input_county)){
+        if (counties.includes(input_county)){
             spec_input.disabled = false;
         }
         else{
+            resetInput(time_input, time_list);
+            date_input.disabled = true;
             resetMedics();
-            resetSpecializations();
+            resetInput(spec_input, spec_sugg);
         }
-
-        makeSuggestions(county_sugg, event.target, hospitals_data, () => spec_input.disabled = false);
+        makeSuggestions(county_sugg, event.target, counties, () => spec_input.disabled = false);
     });
 
     spec_input.addEventListener("input", function(event){
         input_specialization = event.target.value;
 
-        if (spec_data.hasOwnProperty(input_specialization))
+        if (specializations.includes(input_specialization))
             fillMedicsSelect();
-        else
+        else{
+            resetInput(time_input, time_list);
+            date_input.disabled = true;
             resetMedics();
+        }
 
-        makeSuggestions(spec_sugg, event.target, spec_data, fillMedicsSelect);
+        makeSuggestions(spec_sugg, event.target, specializations, fillMedicsSelect);
+    });
+
+    medic_select.addEventListener("change", function(event){
+        resetInput(time_input, time_list);
+        date_input.disabled = false;
+        time_input.disabled = false;
+    });
+
+    date_input.addEventListener("change", function(event){
+        resetInput(time_input, time_list);
+        if (event.target.value)
+            fillTimeOptions();
     });
 
     fill_form_btn.addEventListener("click", function(){
@@ -110,14 +134,14 @@
         // Keep only the data that start with the input value
         let filtered_data = data_list.filter(data => data.toLowerCase().startsWith(input_data.toLowerCase()));
         // Create div for each option and append it to specialzied div
-        filtered_data.forEach(data => addSuggestion(option_div, input_elem, data, sugg_onclick_additional_func));
+        filtered_data.forEach(data => addSuggestion(sugg_list, input_elem, data, sugg_onclick_additional_func));
     }
 
     //Create an option div and append it to the options div
     //On click, added div sets the input value to the option value, removes all other options and
     //calls the additional function if it is not NULL
-    function addSuggestion(sugg_container, input_elem, option_value, option_text, sugg_onclick_additional_func){
-        let option = addOption(sugg_container, option_value, option_text);
+    function addSuggestion(sugg_container, input_elem, option_value, sugg_onclick_additional_func){
+        let option = addOption(sugg_container, option_value, option_value);
 
         option.addEventListener("click", function(){
             input_elem.value = option_data;
@@ -146,14 +170,30 @@
 
     //Fetches the medics with the inputed county and specialization
     // and adds them to the medic select element
+    // Also sets the chosen hospital id
     function fillMedicsSelect(){
-        fetch('getMedics?hospital_id=' + hospitals_data[county_input.value] + '&specialization=' + spec_input.value)
-                .then(response => {    
-                    response.json().then(medics => medics.forEach(medic => addOption(medic_select, 
-                                                                                     medic.medic_id,
-                                                                                     medic.medic_name)));
-                    medic_select.disabled = false;
+        fetch('getMedics?county_id=' + counties_data.find((county)=>{return county.county_name == county_input.value}).county_id +
+              '&spec_id=' + spec_data.find((spec)=>{return spec.specialization_name == spec_input.value}).specialization_id)
+                .then(response => {
+                    response.json().then(res => { 
+                        chosen_hospital_in.value = res['chosen_hospital']
+                        res['medics'].forEach(medic => addOption(medic_select, medic.medic_id, medic.medic_name))
+                                                  
+                    });
                 });
+        medic_select.disabled = false;
+    }
+
+    function fillTimeOptions(){
+        fetch('getFreeTimeIntervals?hospital_id=' + chosen_hospital_in.value +
+              '&medic_id=' + event.target.value +
+              '&appointment_date=' + date_input.value)
+                .then(response => {
+                    response.json().then(times => {
+                        times.forEach(time => addOption(time_input, time, time));
+                    });
+                });
+        time_input.disabled = false;
     }
 
     //Fills the hidden form with the inputed data
@@ -173,17 +213,19 @@
         return local.toJSON().slice(0,10);
     }
 
-    function resetSpecializations(){
-        if (spec_input.disabled) return;
-        removeOptions(spec_sugg);
-        spec_input.value = "";
-        spec_input.disabled = true;
+
+    function resetInput(input, input_sugg){
+        if (input.disabled) return;
+        removeOptions(input_sugg);
+        input.value = "";
+        input.disabled = true;
     }
 
     function resetMedics(){
         if (medic_select.disabled) return;
         removeOptions(medic_select);
         medic_select.disabled = true;
+        medic_select.children[0].selected = true;
     }
 </script>
 </html>
