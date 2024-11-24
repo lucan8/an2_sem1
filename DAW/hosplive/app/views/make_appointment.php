@@ -51,6 +51,7 @@
         <input type="number" id="medic_id" name="medic_id">
         <input type="date" id="appointment_date" name="appointment_date">
         <input type="time" id="appointment_time" name="appointment_time">
+        <input type="number" id="room_id" name="room_id">
     </form>
 </body>
 <script>
@@ -73,6 +74,7 @@
     let time_input = document.getElementById("time_input");
     let time_list = document.getElementById("time_list");
 
+    let chosen_room_in = document.getElementById("room_id");
     let fill_form_btn = document.getElementById("fill_form_btn");
     
     
@@ -82,9 +84,10 @@
             spec_input.disabled = false;
         }
         else{
+            chosen_room_in.value = "";
             resetInput(time_input, time_list);
-            date_input.disabled = true;
-            resetMedics();
+            resetInput(date_input);
+            resetInput(medic_select, medic_select);
             resetInput(spec_input, spec_sugg);
         }
         makeSuggestions(county_sugg, event.target, counties, () => spec_input.disabled = false);
@@ -96,24 +99,42 @@
         if (specializations.includes(input_specialization))
             fillMedicsSelect();
         else{
+            chosen_room_in.value = "";
             resetInput(time_input, time_list);
-            date_input.disabled = true;
-            resetMedics();
+            resetInput(date_input);
+            resetInput(medic_select, medic_select);
         }
 
         makeSuggestions(spec_sugg, event.target, specializations, fillMedicsSelect);
     });
 
     medic_select.addEventListener("change", function(event){
+        chosen_room_in.value = "";
         resetInput(time_input, time_list);
         date_input.disabled = false;
-        time_input.disabled = false;
     });
 
     date_input.addEventListener("change", function(event){
+        chosen_room_in.value = "";
         resetInput(time_input, time_list);
         if (event.target.value)
             fillTimeOptions();
+    });
+
+    time_input.addEventListener("change", function(event){
+        fetch("getFreeRoom?hospital_id=" + chosen_hospital_in.value +
+              "&appointment_date=" + date_input.value + 
+              "&appointment_time=" + event.target.value)
+            .then(response => {
+                response.json().then(room => {
+                    if (!room){
+                        alert("No free rooms available at the chosen hospital at the selected date");
+                        chosen_room_in.value = "";
+                    }
+                    else
+                        chosen_room_in.value = room.room_id;
+                });
+            });
     });
 
     fill_form_btn.addEventListener("click", function(){
@@ -153,6 +174,7 @@
 
     //Remove all options from options_div except the first one
     function removeOptions(options_container){
+        if (!options_container) return;
         while(options_container.childElementCount > 1){
             options_container.removeChild(options_container.lastChild);
         }
@@ -186,11 +208,11 @@
 
     function fillTimeOptions(){
         fetch('getFreeTimeIntervals?hospital_id=' + chosen_hospital_in.value +
-              '&medic_id=' + event.target.value +
+              '&medic_id=' + medic_select.value +
               '&appointment_date=' + date_input.value)
                 .then(response => {
                     response.json().then(times => {
-                        times.forEach(time => addOption(time_input, time, time));
+                        times.forEach(time => addOption(time_list, time, time));
                     });
                 });
         time_input.disabled = false;
@@ -214,18 +236,11 @@
     }
 
 
-    function resetInput(input, input_sugg){
+    function resetInput(input, input_sugg = null){
         if (input.disabled) return;
         removeOptions(input_sugg);
         input.value = "";
         input.disabled = true;
-    }
-
-    function resetMedics(){
-        if (medic_select.disabled) return;
-        removeOptions(medic_select);
-        medic_select.disabled = true;
-        medic_select.children[0].selected = true;
     }
 </script>
 </html>

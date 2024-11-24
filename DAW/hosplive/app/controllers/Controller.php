@@ -41,8 +41,14 @@ class Controller {
 
     public static function getFreeTimeIntervals() {
         require_once "app/models/Appointments.php";
-        $time = json_encode(Appointments::getFreeTimeIntervals($_GET["hospital_id"], $_GET["medic_id"], $_GET["appointment_date"]));
+        $time = json_encode(Appointments::getFreeTimeIntervals((int)$_GET["hospital_id"], (int)$_GET["medic_id"], $_GET["appointment_date"]));
         echo $time;
+    }
+
+    public static function getFreeRoom() {
+        require_once "app/models/Appointments.php";
+        $room = json_encode(Appointments::getFreeRoom((int)$_GET["hospital_id"], $_GET["appointment_date"], $_GET["appointment_time"]));
+        echo $room;
     }
 }
 ?>

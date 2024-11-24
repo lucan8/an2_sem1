@@ -30,16 +30,19 @@
             self::_insert($data);
         }
 
-        public static function getFreeRooms($hospital_id, $appointment_date){
-            $query = "SELECT room_id FROM " . static::class . " WHERE hospital_id = ? AND appointment_date = ?";
-            self::printQuery($query, [$hospital_id, $appointment_date]);
+        //Gets the first free room for a given hospital, date and time
+        public static function getFreeRoom($hospital_id, $appointment_date, $appointment_time): AppointmentsData|false{
+            $query = "SELECT room_id FROM rooms WHERE hospital_id = ? EXCEPT
+                      SELECT room_id FROM " . static::class .
+                      " WHERE hospital_id = ? AND appointment_date = ? AND appointment_time = ? LIMIT 1";
+            self::printQuery($query, [$hospital_id, $hospital_id, $appointment_date, $appointment_time]);
 
             $stm = self::$conn->prepare($query);
             $stm->setFetchMode(PDO::FETCH_CLASS, static::class . "Data");
             
-            $stm->execute([$hospital_id, $appointment_date]);
+            $stm->execute([$hospital_id, $hospital_id, $appointment_date, $appointment_time]);
 
-            $stm->fetchAll();
+            return $stm->fetch();
         }
         
         public static function getByHospMedDate($hospital_id, $medic_id, $appointment_date): array{
@@ -56,6 +59,7 @@
             return $stm->fetchAll();
         }
 
+        //Returns a list of available times for a given hospital, medic and date
         public static function getFreeTimeIntervals($hospital, $medic_id, $appointment_date): array{
             require_once "app/models/Hospitals.php";
             // Getting the appointments made at the given hospital, medic and date
@@ -74,9 +78,9 @@
                 if ($curr_index < count($res) && $start_time == $res[$curr_index]->appointment_time)
                     $curr_index++;
                 else
-                    $times[] = $start_time;
+                    $times[] = $start_time->format("H:i");
                     
-                $start_time->add(new DateInterval('PT' . $duration . 'M'));   
+                $start_time->add(new DateInterval('PT' . self::DEFAULT_DURATION . 'M'));   
             }
             return $times;
         }

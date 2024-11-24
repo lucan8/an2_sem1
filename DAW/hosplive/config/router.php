@@ -3,6 +3,8 @@ $routes = [
     "hosplive/index" => ["Controller", "index"],
     "hosplive/makeAppointment" => ["Controller", "makeAppointment"],
     "hosplive/getMedics" => ["Controller", "getMedics"],
+    "hosplive/getFreeTimeIntervals" => ["Controller", "getFreeTimeIntervals"],
+    "hosplive/getFreeRoom" => ["Controller", "getFreeRoom"]
 ];
 
 class Router {
