@@ -5,8 +5,11 @@
         public int $hospital_id;
         public int $medic_id;
         public int $room_id;
+        
+        //TODO: Change to DateTime
         public string $appointment_date;
-        public string $appointment_time;  
+        public string $appointment_time;
+
         public int $duration;
 
         function __construct(){}
@@ -26,10 +29,19 @@
     class Appointments extends Entity{
         // Default duration of an appointment in minutes
         public const DEFAULT_DURATION = 30;
-        public static function insert(AppointmentsData $data){
-            self::_insert($data);
-        }
 
+        public static function getByUser($user_id): array{
+            $query = "SELECT * FROM " . static::class . " WHERE user_id = ?";
+            self::printQuery($query, [$user_id]);
+
+            $stm = self::$conn->prepare($query);
+            $stm->setFetchMode(PDO::FETCH_CLASS, static::class . "Data");
+            
+            $stm->execute([$user_id]);
+
+            return $stm->fetchAll();
+        }
+        
         //Gets the first free room for a given hospital, date and time
         public static function getFreeRoom($hospital_id, $appointment_date, $appointment_time): AppointmentsData|false{
             $query = "SELECT room_id FROM rooms WHERE hospital_id = ? EXCEPT
@@ -75,7 +87,7 @@
             
             //Adding all possible appointments that are different from the ones already made
             while ($start_time < $end_time){
-                if ($curr_index < count($res) && $start_time == $res[$curr_index]->appointment_time)
+                if ($curr_index < count($res) && $start_time->format("H:i:s") == $res[$curr_index]->appointment_time)
                     $curr_index++;
                 else
                     $times[] = $start_time->format("H:i");
