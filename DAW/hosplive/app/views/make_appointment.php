@@ -31,10 +31,10 @@
 
         <!--Better solution here-->
         <!--https://stackoverflow.com/questions/19655250/is-it-possible-to-disable-input-time-clear-button-->
-        <input type="date" required id="date_input">
+        <input type="date" id="date_input" disabled>
 
         <div>
-            <input type="time" required id="time_input" list="time_list" min=<?= Hospitals :: OPENING_TIME ?> max=<?= Hospitals :: CLOSING_TIME ?> step=<?= Appointments :: DEFAULT_DURATION * 60 ?>>
+            <input type="time" required id="time_input" list="time_list" min=<?= Hospitals :: OPENING_TIME ?> max=<?= Hospitals :: CLOSING_TIME ?> step=<?= Appointments :: DEFAULT_DURATION * 60 ?> disabled>
             <datalist id="time_list">
                 <option disabled>Select Time</option>
                 <option value=<?= Hospitals :: OPENING_TIME ?>></option>
@@ -45,14 +45,23 @@
     </div>
 
     <!-- Form with actual data -->
-    <form action="makeAppointment" method="post" id="appointment_form" hidden>
+    <form id="appointment_form" hidden>
+        <!--The correct way to get the user id-->
+        <!--<input type="number" id="user_id" name="user_id" value=<?= $_SESSION["user_id"] ?>> -->
+
+        <!--Temporary solution-->
+        <input type="number" id="user_id" name="user_id" value="1">
         <input type="number" id="hospital_id" name="hospital_id">
-        <input type="number" id="spec_id" name="spec_id">
         <input type="number" id="medic_id" name="medic_id">
         <input type="date" id="appointment_date" name="appointment_date">
         <input type="time" id="appointment_time" name="appointment_time">
         <input type="number" id="room_id" name="room_id">
     </form>
+
+    <button id="appointments_btn">See appointments</button>
+    <div id="appointments_cont">
+
+    </div>
 </body>
 <script>
     let county_sugg = document.getElementById("county_list");
@@ -67,29 +76,29 @@
     let specializations = spec_data.map(spec => spec.specialization_name);
 
     let medic_select = document.getElementById("medic_select");
+    let chosen_medic_in = document.getElementById("medic_id");
 
     let date_input = document.getElementById("date_input");
     date_input.min = toDateInputValue(new Date());
+    let chosen_date_in = document.getElementById("appointment_date");
 
     let time_input = document.getElementById("time_input");
     let time_list = document.getElementById("time_list");
+    let chosen_time_in = document.getElementById("appointment_time");
 
-    let chosen_room_in = document.getElementById("room_id");
     let fill_form_btn = document.getElementById("fill_form_btn");
+    let app_form = document.getElementById("appointment_form");
+    let chosen_room_in = document.getElementById("room_id");
     
+    let app_cont = document.getElementById("appointments_cont");
     
     county_input.addEventListener("input", function(event){
         let input_county = event.target.value;
         if (counties.includes(input_county)){
             spec_input.disabled = false;
         }
-        else{
-            chosen_room_in.value = "";
-            resetInput(time_input, time_list);
-            resetInput(date_input);
-            resetInput(medic_select, medic_select);
-            resetInput(spec_input, spec_sugg);
-        }
+        else
+            resetSpec();
         makeSuggestions(county_sugg, event.target, counties, () => spec_input.disabled = false);
     });
 
@@ -98,25 +107,20 @@
 
         if (specializations.includes(input_specialization))
             fillMedicsSelect();
-        else{
-            chosen_room_in.value = "";
-            resetInput(time_input, time_list);
-            resetInput(date_input);
-            resetInput(medic_select, medic_select);
-        }
+        else
+            resetMedics();
 
         makeSuggestions(spec_sugg, event.target, specializations, fillMedicsSelect);
     });
 
     medic_select.addEventListener("change", function(event){
-        chosen_room_in.value = "";
-        resetInput(time_input, time_list);
+        resetDate();
         date_input.disabled = false;
+        chosen_medic_in.value = event.target.value;
     });
 
     date_input.addEventListener("change", function(event){
-        chosen_room_in.value = "";
-        resetInput(time_input, time_list);
+        resetTime();
         if (event.target.value)
             fillTimeOptions();
     });
@@ -126,23 +130,43 @@
               "&appointment_date=" + date_input.value + 
               "&appointment_time=" + event.target.value)
             .then(response => {
-                response.json().then(room => {
-                    if (!room){
+                response.json().then(res => {
+                    if (!res['ok']){
+                        alert("Failed to get free room(interal error)");
+                        console.log(res['error']);
+                        return;
+                    }
+                    if (!res['data']['room']) {
                         alert("No free rooms available at the chosen hospital at the selected date");
                         chosen_room_in.value = "";
                     }
                     else
-                        chosen_room_in.value = room.room_id;
+                        chosen_room_in.value = res['data']['room'].room_id;
                 });
             });
     });
 
     fill_form_btn.addEventListener("click", function(){
-        let form = document.getElementById("appointment_form");
-
         fillForm();
+        data = new FormData(app_form);
 
-        form.submit();
+        fetch("makeAppointment", {
+            method: "POST",
+            body: data
+        }).then(response => response.json().then(response => {
+            if (response['ok']){
+                alert("Appointment made successfully");
+                resetCounties();
+            }
+            else{
+                alert("Failed to make appointment(interal error)");
+                console.log(response['error'])
+            }
+        }));
+    });
+
+    document.getElementById("appointments_btn").addEventListener("click", function(){
+        fillAppointments();
     });
 
     //Create divs for each option that starts with the input value
@@ -197,36 +221,63 @@
         fetch('getMedics?county_id=' + counties_data.find((county)=>{return county.county_name == county_input.value}).county_id +
               '&spec_id=' + spec_data.find((spec)=>{return spec.specialization_name == spec_input.value}).specialization_id)
                 .then(response => {
-                    response.json().then(res => { 
-                        chosen_hospital_in.value = res['chosen_hospital']
-                        res['medics'].forEach(medic => addOption(medic_select, medic.medic_id, medic.medic_name))
+                    response.json().then(res => {
+                        if (!res['ok']){
+                            alert("Failed to get medics(interal error)");
+                            console.log(res['error']);
+                            return;
+                        }
+                        chosen_hospital_in.value = res['data']['chosen_hospital']
+                        res['data']['medics'].forEach(medic => addOption(medic_select, medic.medic_id, medic.medic_name))
                                                   
                     });
                 });
         medic_select.disabled = false;
     }
 
+    //Fetches the free time intervals for the chosen hospital, medic and date and adds them to the time input list
     function fillTimeOptions(){
         fetch('getFreeTimeIntervals?hospital_id=' + chosen_hospital_in.value +
               '&medic_id=' + medic_select.value +
               '&appointment_date=' + date_input.value)
                 .then(response => {
-                    response.json().then(times => {
-                        times.forEach(time => addOption(time_list, time, time));
+                    response.json().then(res => {
+                        if (!res['ok']){
+                            alert("Failed to get available times(interal error)");
+                            console.log(res['error']);
+                            return;
+                        }
+                        res['data']['times'].forEach(time => addOption(time_list, time, time));
                     });
                 });
         time_input.disabled = false;
     }
 
+    //Move this to separate file
+    //TODO:REMOVE HARDCORDING OF USER ID
+    function fillAppointments(){
+        fetch('getAppointments?user_id=' + 1)
+            .then(response => {
+                response.json().then(res => {
+                    if (!res['ok']){
+                            alert("Failed to get appointments(interal error)");
+                            console.log(res['error']);
+                            return;
+                        }
+                    res['data']['appointments'].forEach(appointment => {
+                        let app_div = document.createElement("div");
+                        app_div.innerHTML = appointment.appointment_date + " " + appointment.appointment_time;
+                        app_cont.appendChild(app_div);
+                    });
+                });
+            });
+    }
+
     //Fills the hidden form with the inputed data
     function fillForm(){
-        document.getElementById("county_id").value = counties_data.find(county => county.county_name == county_input.value).county_id;
-        document.getElementById("spec_id").value = spec_data.find(spec => spec.specialization_name == spec_input.value).specialization_id;
-
-        document.getElementById("medic_id").value = medic_select.value;
-
-        document.getElementById("appointment_date").value = date_input.value;
-        document.getElementById("appointment_time").value = time_input.value;
+        chosen_medic_in.value = medic_select.value;
+        chosen_date_in.value = date_input.value;
+        chosen_time_in.value = time_input.value;
     }
 
     function toDateInputValue(dateObject){
@@ -235,12 +286,42 @@
         return local.toJSON().slice(0,10);
     }
 
-
+    //Used moslty for emptying the suggestions and options and disabling the associated input
     function resetInput(input, input_sugg = null){
         if (input.disabled) return;
         removeOptions(input_sugg);
         input.value = "";
         input.disabled = true;
+    }
+
+    function resetCounties(){
+        resetInput(county_input, county_sugg);
+        resetSpec();
+    }
+
+    function resetSpec(){
+        resetInput(spec_input, null);
+        resetMedics();
+        chosen_hospital_in.value = "";
+    }
+
+    function resetMedics(){
+        resetInput(medic_select, medic_select);
+        resetDate();
+        medic_select.children[0].selected = true;
+        chosen_medic_in.value = "";
+
+    }
+
+    function resetDate(){
+        resetInput(date_input);
+        resetTime();
+        chosen_date_in.value = "";
+    }
+    function resetTime(){
+        resetInput(time_input, time_list);
+        chosen_room_in.value = "";
+        chosen_time_in.value = "";
     }
 </script>
 </html>
