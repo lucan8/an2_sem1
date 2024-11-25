@@ -34,16 +34,19 @@ abstract class Entity{
             throw new FileOpenException(self::QUERY_LOG_FILE);
     }
 
+    //Does not work when params is assoc array
+    //TODO: Replace ? with :key and pass assoc array
     public static function printQuery(string $query, array $params = []){
         if (count($params) != 0){
             $placeholders = array_fill(0, count($params), '?');
-            $query = str_replace($placeholders, $params, $query);
+            $query = implode(str_replace($placeholders, $params, str_split($query)),);
         }
          
         fwrite(self::$log_file, date("d/m/yy H:i:s: ") . $query . "\n");
     }
 
-    protected static function _insert(EntityData $data){
+    //TODO:Error checking
+    public static function insert(EntityData $data): bool{
         //Setting the data as array and the placeholders(filtering out null values)
         $data_array = array_filter(get_object_vars($data));
         $inserted_values = array_values($data_array);
@@ -60,7 +63,7 @@ abstract class Entity{
 
         //Executing the query
         $stm = self::$conn->prepare($query);
-        $stm->execute(array_values($inserted_values));
+        return $stm->execute($inserted_values);
     }
 
     public static function getAll(): array{
