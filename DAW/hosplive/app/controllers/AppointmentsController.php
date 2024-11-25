@@ -1,5 +1,16 @@
 <?php
 class AppointmentsController {
+    public static function index() {
+        if ($_SERVER["REQUEST_METHOD"] == "GET"){
+            require_once "app/views/layout.php";
+            self::makeAppointment();
+            require_once "app/models/Appointments.php";
+            //TODO: Get the user id from the session
+            $appointments = Appointments::getAppointments(1);
+            require_once "app/views/appointments.php";
+        }
+    }
+
     public static function makeAppointment() {
         if ($_SERVER["REQUEST_METHOD"] == "GET"){
             require_once "app/models/Counties.php";
@@ -14,7 +25,6 @@ class AppointmentsController {
 
             //Render the view
             require_once "app/views/make_appointment.php";
-
         }
         //Get all information from form and insert it into the database
         else if ($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -191,7 +201,6 @@ class AppointmentsController {
             echo json_encode($res);
             return;
         }
-
         echo json_encode($res);
     }
 }
