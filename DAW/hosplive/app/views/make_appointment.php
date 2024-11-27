@@ -1,27 +1,32 @@
-<?php
-    require_once "layout.php";
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../public/make_appointment.js?$$REVISION$$"></script>
     <title>Make Appointments</title>
 </head>
 <body>
     <div>
         <div id="county_div">
-            <input type="text" placeholder="County" id="county_input" list="county_list">
+            <input type="text" placeholder="County" id="county_input" list="county_list" autocomplete="false">
             <datalist id="county_list">
                 <option disabled>Select County</option>
+                <?php 
+                    foreach ($counties as $county){
+                        echo "<option value='{$county->county_name}' id='{$county->county_id}' name='{$county->county_name}' disabled>{$county->county_name}</option>";
+                    }?>
             </datalist>
         </div>
 
         <div id="spec_div">
-            <input type="text" placeholder="Specialization" id="specialization_input" list="spec_list" disabled>
+            <input type="text" placeholder="Specialization" id="specialization_input" list="spec_list" disabled autocomplete="false">
             <datalist id="spec_list">
                 <option disabled>Select Specialization</option>
+                <?php 
+                    foreach ($specializations as $spec){
+                        echo "<option value='{$spec->specialization_name}' id='{$spec->specialization_id}' name='{$spec->specialization_name}' disabled>{$spec->specialization_name}</option>";
+                    }?>
             </datalist>
         </div>
 
@@ -37,8 +42,6 @@
             <input type="time" required id="time_input" list="time_list" min=<?= Hospitals :: OPENING_TIME ?> max=<?= Hospitals :: CLOSING_TIME ?> step=<?= Appointments :: DEFAULT_DURATION * 60 ?> disabled>
             <datalist id="time_list">
                 <option disabled>Select Time</option>
-                <option value=<?= Hospitals :: OPENING_TIME ?>></option>
-                <option value=<?= Hospitals :: CLOSING_TIME ?>></option>
             </datalist>
         </div>
         <input type="submit" value="Make Appointment" id="fill_form_btn">
@@ -46,9 +49,6 @@
 
     <!-- Form with actual data -->
     <form id="appointment_form" hidden>
-        <!--The correct way to get the user id-->
-        <!--<input type="number" id="user_id" name="user_id" value=<?= $_SESSION["user_id"] ?>> -->
-
         <!--Temporary solution-->
         <input type="number" id="user_id" name="user_id" value="1">
         <input type="number" id="hospital_id" name="hospital_id">
@@ -57,271 +57,5 @@
         <input type="time" id="appointment_time" name="appointment_time">
         <input type="number" id="room_id" name="room_id">
     </form>
-
-    <button id="appointments_btn">See appointments</button>
-    <div id="appointments_cont">
-
-    </div>
 </body>
-<script>
-    let county_sugg = document.getElementById("county_list");
-    let county_input = document.getElementById("county_input");
-    let counties_data = <?= $counties ?>;
-    let counties = counties_data.map(county => county.county_name);
-    let chosen_hospital_in = document.getElementById("hospital_id");
-
-    let spec_sugg = document.getElementById("spec_list");
-    let spec_input = document.getElementById("specialization_input");
-    let spec_data = <?= $specializations ?>;
-    let specializations = spec_data.map(spec => spec.specialization_name);
-
-    let medic_select = document.getElementById("medic_select");
-    let chosen_medic_in = document.getElementById("medic_id");
-
-    let date_input = document.getElementById("date_input");
-    date_input.min = toDateInputValue(new Date());
-    let chosen_date_in = document.getElementById("appointment_date");
-
-    let time_input = document.getElementById("time_input");
-    let time_list = document.getElementById("time_list");
-    let chosen_time_in = document.getElementById("appointment_time");
-
-    let fill_form_btn = document.getElementById("fill_form_btn");
-    let app_form = document.getElementById("appointment_form");
-    let chosen_room_in = document.getElementById("room_id");
-    
-    let app_cont = document.getElementById("appointments_cont");
-    
-    county_input.addEventListener("input", function(event){
-        let input_county = event.target.value;
-        if (counties.includes(input_county)){
-            spec_input.disabled = false;
-        }
-        else
-            resetSpec();
-        makeSuggestions(county_sugg, event.target, counties, () => spec_input.disabled = false);
-    });
-
-    spec_input.addEventListener("input", function(event){
-        input_specialization = event.target.value;
-
-        if (specializations.includes(input_specialization))
-            fillMedicsSelect();
-        else
-            resetMedics();
-
-        makeSuggestions(spec_sugg, event.target, specializations, fillMedicsSelect);
-    });
-
-    medic_select.addEventListener("change", function(event){
-        resetDate();
-        date_input.disabled = false;
-        chosen_medic_in.value = event.target.value;
-    });
-
-    date_input.addEventListener("change", function(event){
-        resetTime();
-        if (event.target.value)
-            fillTimeOptions();
-    });
-
-    time_input.addEventListener("change", function(event){
-        fetch("getFreeRoom?hospital_id=" + chosen_hospital_in.value +
-              "&appointment_date=" + date_input.value + 
-              "&appointment_time=" + event.target.value)
-            .then(response => {
-                response.json().then(res => {
-                    if (!res['ok']){
-                        alert("Failed to get free room(interal error)");
-                        console.log(res['error']);
-                        return;
-                    }
-                    if (!res['data']['room']) {
-                        alert("No free rooms available at the chosen hospital at the selected date");
-                        chosen_room_in.value = "";
-                    }
-                    else
-                        chosen_room_in.value = res['data']['room'].room_id;
-                });
-            });
-    });
-
-    fill_form_btn.addEventListener("click", function(){
-        fillForm();
-        data = new FormData(app_form);
-
-        fetch("makeAppointment", {
-            method: "POST",
-            body: data
-        }).then(response => response.json().then(response => {
-            if (response['ok']){
-                alert("Appointment made successfully");
-                resetCounties();
-            }
-            else{
-                alert("Failed to make appointment(interal error)");
-                console.log(response['error'])
-            }
-        }));
-    });
-
-    document.getElementById("appointments_btn").addEventListener("click", function(){
-        fillAppointments();
-    });
-
-    //Create divs for each option that starts with the input value
-    function makeSuggestions(sugg_list, input_elem, data_list, sugg_onclick_additional_func){
-        removeOptions(sugg_list);
-
-        let input_data = input_elem.value;
-        if (input_data == "") return;
-
-        // Keep only the data that start with the input value
-        let filtered_data = data_list.filter(data => data.toLowerCase().startsWith(input_data.toLowerCase()));
-        // Create div for each option and append it to specialzied div
-        filtered_data.forEach(data => addSuggestion(sugg_list, input_elem, data, sugg_onclick_additional_func));
-    }
-
-    //Create an option div and append it to the options div
-    //On click, added div sets the input value to the option value, removes all other options and
-    //calls the additional function if it is not NULL
-    function addSuggestion(sugg_container, input_elem, option_value, sugg_onclick_additional_func){
-        let option = addOption(sugg_container, option_value, option_value);
-
-        option.addEventListener("click", function(){
-            input_elem.value = option_data;
-            removeOptions(suggestion_container);
-            if (sugg_onclick_additional_func != null)
-                sugg_onclick_additional_func();
-        });
-    }
-
-    //Remove all options from options_div except the first one
-    function removeOptions(options_container){
-        if (!options_container) return;
-        while(options_container.childElementCount > 1){
-            options_container.removeChild(options_container.lastChild);
-        }
-    }
-
-    //Adds an option to option cont with the given value and text and returns the created option
-    function addOption(option_cont, option_value, option_text){
-        let option = document.createElement("option");
-        option.value = option_value;
-        option.text = option_text;
-        option_cont.appendChild(option);
-
-        return option;
-    }
-
-    //Fetches the medics with the inputed county and specialization
-    // and adds them to the medic select element
-    // Also sets the chosen hospital id
-    function fillMedicsSelect(){
-        fetch('getMedics?county_id=' + counties_data.find((county)=>{return county.county_name == county_input.value}).county_id +
-              '&spec_id=' + spec_data.find((spec)=>{return spec.specialization_name == spec_input.value}).specialization_id)
-                .then(response => {
-                    response.json().then(res => {
-                        if (!res['ok']){
-                            alert("Failed to get medics(interal error)");
-                            console.log(res['error']);
-                            return;
-                        }
-                        chosen_hospital_in.value = res['data']['chosen_hospital']
-                        res['data']['medics'].forEach(medic => addOption(medic_select, medic.medic_id, medic.medic_name))
-                                                  
-                    });
-                });
-        medic_select.disabled = false;
-    }
-
-    //Fetches the free time intervals for the chosen hospital, medic and date and adds them to the time input list
-    function fillTimeOptions(){
-        fetch('getFreeTimeIntervals?hospital_id=' + chosen_hospital_in.value +
-              '&medic_id=' + medic_select.value +
-              '&appointment_date=' + date_input.value)
-                .then(response => {
-                    response.json().then(res => {
-                        if (!res['ok']){
-                            alert("Failed to get available times(interal error)");
-                            console.log(res['error']);
-                            return;
-                        }
-                        res['data']['times'].forEach(time => addOption(time_list, time, time));
-                    });
-                });
-        time_input.disabled = false;
-    }
-
-    //Move this to separate file
-    //TODO:REMOVE HARDCORDING OF USER ID
-    function fillAppointments(){
-        fetch('getAppointments?user_id=' + 1)
-            .then(response => {
-                response.json().then(res => {
-                    if (!res['ok']){
-                            alert("Failed to get appointments(interal error)");
-                            console.log(res['error']);
-                            return;
-                        }
-                    res['data']['appointments'].forEach(appointment => {
-                        let app_div = document.createElement("div");
-                        app_div.innerHTML = appointment.appointment_date + " " + appointment.appointment_time;
-                        app_cont.appendChild(app_div);
-                    });
-                });
-            });
-    }
-
-    //Fills the hidden form with the inputed data
-    function fillForm(){
-        chosen_medic_in.value = medic_select.value;
-        chosen_date_in.value = date_input.value;
-        chosen_time_in.value = time_input.value;
-    }
-
-    function toDateInputValue(dateObject){
-        let local = new Date(dateObject);
-        local.setMinutes(dateObject.getMinutes() - dateObject.getTimezoneOffset());
-        return local.toJSON().slice(0,10);
-    }
-
-    //Used moslty for emptying the suggestions and options and disabling the associated input
-    function resetInput(input, input_sugg = null){
-        if (input.disabled) return;
-        removeOptions(input_sugg);
-        input.value = "";
-        input.disabled = true;
-    }
-
-    function resetCounties(){
-        resetInput(county_input, county_sugg);
-        resetSpec();
-    }
-
-    function resetSpec(){
-        resetInput(spec_input, null);
-        resetMedics();
-        chosen_hospital_in.value = "";
-    }
-
-    function resetMedics(){
-        resetInput(medic_select, medic_select);
-        resetDate();
-        medic_select.children[0].selected = true;
-        chosen_medic_in.value = "";
-
-    }
-
-    function resetDate(){
-        resetInput(date_input);
-        resetTime();
-        chosen_date_in.value = "";
-    }
-    function resetTime(){
-        resetInput(time_input, time_list);
-        chosen_room_in.value = "";
-        chosen_time_in.value = "";
-    }
-</script>
 </html>
