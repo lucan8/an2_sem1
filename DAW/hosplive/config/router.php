@@ -7,6 +7,8 @@ $routes = [
     "hosplive/getFreeRoom" => ["AppointmentsController", "getFreeRoom"],
     "hosplive/getAppointments" => ["AppointmentsController", "getAppointments"],
     "hosplive/appointments" => ["AppointmentsController", "index"],
+    "hosplive/cancel_appointment" => ["AppointmentsController", "cancelAppointment"],
+    "hosplive/edit_appointment" => ["AppointmentsController", "editAppointment"],
 ];
 
 class Router {
