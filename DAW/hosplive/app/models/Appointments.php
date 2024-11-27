@@ -1,6 +1,9 @@
 <?php
     require_once 'Entity.php';
     class AppointmentsData extends EntityData{
+        //Auto increment(auto increment keys are set to 0 by default so that they are ignored when inserting)
+        public int $appointment_id = 0;
+
         public int $user_id;
         public int $hospital_id;
         public int $medic_id;
@@ -44,8 +47,9 @@
         
         //Returns appointments data substituting the ids with the names
         public static function getAppointments($user_id): array{
-            $query = "SELECT c.county_name as county, m.medic_name as medic,
-                             a.appointment_date as date, a.appointment_time as time, a.room_id as room
+            $query = "SELECT a.appointment_id as id, c.county_name as county,
+                             m.medic_name , a.appointment_date as date,
+                             a.appointment_time as time, a.room_id as room
                       FROM " . static::class . " a
                       JOIN hospitals h ON a.hospital_id = h.hospital_id
                       JOIN medics m ON a.medic_id = m.medic_id
@@ -86,6 +90,23 @@
             $stm->execute([$hospital_id, $medic_id, $appointment_date]);
 
             return $stm->fetchAll();
+        }
+
+        public static function removeById($appointment_id): bool{
+            $query = "DELETE FROM " . static::class . " WHERE appointment_id = ?";
+            self::printQuery($query, [$appointment_id]);
+
+            $stm = self::$conn->prepare($query);
+            return $stm->execute([$appointment_id]);
+        }
+
+        public static function updateDateTime($appointment_id, $appointment_date, $appointment_time): bool{
+            $query = "UPDATE " . static::class . " SET appointment_date = ?, appointment_time = ?
+                      WHERE appointment_id = ?";
+            self::printQuery($query, [$appointment_date, $appointment_time, $appointment_id]);
+
+            $stm = self::$conn->prepare($query);
+            return $stm->execute([$appointment_date, $appointment_time, $appointment_id]);
         }
 
         //Returns a list of available times for a given hospital, medic and date
