@@ -61,11 +61,11 @@ data IntSearchTree value
       (Maybe value)             -- valoarea elementului
       (IntSearchTree value)     -- elemente cu cheia mai mare
   
-lookup' :: Int -> IntSearchTree value -> IntSearchTree value
+lookup' :: Int -> IntSearchTree value -> Maybe value
 lookup' s_key Empty = Nothing
 lookup' s_key (BNode left curr_key ret_val right) = 
     if curr_key == s_key
-        then (BNode left curr_key ret_val right)
+        then ret_val
     else if curr_key < s_key
         then lookup' s_key left
     else lookup' s_key right
@@ -78,29 +78,31 @@ values :: IntSearchTree value -> [value]
 values root = [snd pair | pair <- toList root]
 
 insert :: Int -> value -> IntSearchTree value -> IntSearchTree value
-insert s_key val Empty = (BNode Empty s_key (Just val) Empty)
-insert s_key val (BNode left curr_key ret_val right) = 
-    if curr_key == s_key
-        then (BNode left curr_key ret_val right)
-    else if curr_key < s_key
-        then insert s_key val left
-    else insert s_key val right
+insert s_key val Empty = BNode Empty s_key (Just val) Empty
+insert s_key val (BNode left curr_key ret_val right)
+ |s_key < curr_key = BNode (insert s_key val left) curr_key ret_val right
+ |s_key > curr_key = BNode left curr_key ret_val (insert s_key val left)
+ |otherwise = BNode left curr_key ret_val right
 
 delete :: Int -> IntSearchTree value -> IntSearchTree value
-delete s_key (BNode Empty s_key val Empty) = Empty
-delete s_key (BNode Empty s_key val right) = right
-delete s_key (BNode left s_key val Empty) = left
-delete s_key curr_node = delete s_key (lookup' s_key curr_node)
+delete s_key (BNode left curr_key ret_val right)
+ | s_key < curr_key = BNode (delete s_key left) curr_key ret_val right
+ | s_key > curr_key = BNode left curr_key ret_val (delete s_key left)
+ | otherwise = Empty
 
 toList :: IntSearchTree value -> [(Int, value)]
 toList Empty = []
 toList (BNode left key (Just val) right) = (toList left) ++ [(key, val)] ++ toList(right)
 
-fromList :: [(Int,value)] -> IntSearchTree value 
-fromList = undefined
+fromList :: [(Int,value)] -> IntSearchTree value
+fromList [] = Empty 
+fromList (x : xs) = insert (fst x) (snd x) (fromList xs)
 
-printTree :: IntSearchTree value -> String
-printTree = undefined
+printTree :: IntSearchTree Int -> String
+printTree Empty = ""
+printTree (BNode left key (Just val) right) =  "(" ++ show key ++ " " ++ show val ++ ") " ++
+                                               (printTree left) ++ " " ++ (printTree right)
+printTree (BNode left key Nothing right) = (printTree left) ++ " " ++ (printTree right)
 
 -- balance :: IntSearchTree value -> IntSearchTree value
 -- balance = undefined
