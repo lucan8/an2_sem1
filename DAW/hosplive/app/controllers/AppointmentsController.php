@@ -14,10 +14,10 @@ class AppointmentsController {
     public static function makeAppointment() {
         if ($_SERVER["REQUEST_METHOD"] == "GET"){
             require_once "app/models/Counties.php";
-            $counties = json_encode(Counties::getAll());
+            $counties = Counties::getAll();
             
             require_once "app/models/Specializations.php";
-            $specializations = json_encode(Specializations::getAll());
+            $specializations = Specializations::getAll();
 
             // Used for constants
             require_once "app/models/Hospitals.php";
@@ -45,7 +45,8 @@ class AppointmentsController {
 
             require_once "app/models/Appointments.php";
             require_once "app/models/Hospitals.php";
-
+            
+            //Setting the data to be inserted
             $app = new AppointmentsData();
             $app->set((int)$_POST["user_id"], (int)$_POST["hospital_id"], (int)$_POST["medic_id"],
                       (int)$_POST["room_id"], $_POST["appointment_date"], $_POST["appointment_time"]);
@@ -59,6 +60,71 @@ class AppointmentsController {
             echo json_encode($res);
         }
     }
+
+    public static function cancelAppointment(){
+        $res = ["ok" => true];
+        //Only accepting post requests
+        if ($_SERVER["REQUEST_METHOD"] != "POST"){
+            $res["error"] = "Invalid request method";
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+        //Getting the unset parameters
+        $unset_parameters = array_filter(["appointment_id"], function($param){
+            return !isset($_POST[$param]) || $_POST[$param] == "";
+        });
+
+        //If there are unset parameters, return an error with the unset parameters
+        if (count($unset_parameters) != 0){
+            $res["error"] = "Invalid request parameters: " . implode(", ", $unset_parameters);
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+
+        require_once "app/models/Appointments.php";
+        try{
+            $res["ok"] = Appointments::removeById((int)$_POST["appointment_id"]);
+        } catch (Exception $e){
+            $res["ok"] = false;
+            $res["error"] = $e->getMessage();
+        }
+        echo json_encode($res);
+    }
+
+    public static function editAppointment(){
+        $res = ["ok" => true];
+        //Only accepting post requests
+        if ($_SERVER["REQUEST_METHOD"] != "POST"){
+            $res["error"] = "Invalid request method";
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+        //Getting the unset parameters
+        $unset_parameters = array_filter(["appointment_id", "appointment_date", "appointment_time"], function($param){
+            return !isset($_POST[$param]) || $_POST[$param] == "";
+        });
+
+        //If there are unset parameters, return an error with the unset parameters
+        if (count($unset_parameters) != 0){
+            $res["error"] = "Invalid request parameters: " . implode(", ", $unset_parameters);
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+
+        require_once "app/models/Appointments.php";
+        try{
+            $res["ok"] = Appointments::updateDateTime((int)$_POST["appointment_id"], $_POST["appointment_date"], $_POST["appointment_time"]);
+        } catch (Exception $e){
+            $res["ok"] = false;
+            $res["error"] = $e->getMessage();
+        }
+        echo json_encode($res);
+    }
+
     //Gets the hospital associated with the passed county,
     //Then gets the medics from that hospital with the passed specialization
     public static function getMedics() {
