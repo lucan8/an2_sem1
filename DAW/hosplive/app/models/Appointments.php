@@ -9,10 +9,8 @@
         public int $medic_id;
         public int $room_id;
         
-        //TODO: Change to DateTime
         public string $appointment_date;
         public string $appointment_time;
-
         public int $duration;
 
         function __construct(){}
@@ -48,13 +46,13 @@
         //Returns appointments data substituting the ids with the names
         public static function getAppointments($user_id): array{
             $query = "SELECT a.appointment_id as id, c.county_name as county,
-                             m.medic_name , a.appointment_date as date,
+                             m.medic_name, m.medic_id, h.hospital_id, a.appointment_date as date,
                              a.appointment_time as time, a.room_id as room
                       FROM " . static::class . " a
                       JOIN hospitals h ON a.hospital_id = h.hospital_id
                       JOIN medics m ON a.medic_id = m.medic_id
                       JOIN counties c ON h.county_id = c.county_id
-                      WHERE a.user_id = ?";
+                      WHERE a.user_id = ? ORDER BY date, time";
             self::printQuery($query, [$user_id]);
 
             $stm = self::$conn->prepare($query);
@@ -92,47 +90,18 @@
             return $stm->fetchAll();
         }
 
-        public static function removeById($appointment_id): bool{
-            $query = "DELETE FROM " . static::class . " WHERE appointment_id = ?";
-            self::printQuery($query, [$appointment_id]);
-
-            $stm = self::$conn->prepare($query);
-            return $stm->execute([$appointment_id]);
-        }
-
         public static function updateDateTime($appointment_id, $appointment_date, $appointment_time): bool{
             $query = "UPDATE " . static::class . " SET appointment_date = ?, appointment_time = ?
                       WHERE appointment_id = ?";
             self::printQuery($query, [$appointment_date, $appointment_time, $appointment_id]);
 
             $stm = self::$conn->prepare($query);
-            return $stm->execute([$appointment_date, $appointment_time, $appointment_id]);
-        }
+            $success = $stm->execute([$appointment_date, $appointment_time, $appointment_id]);
 
-        //Returns a list of available times for a given hospital, medic and date
-        public static function getFreeTimeIntervals($hospital, $medic_id, $appointment_date): array{
-            require_once "app/models/Hospitals.php";
-            // Getting the appointments made at the given hospital, medic and date
-            $res = self::getByHospMedDate($hospital, $medic_id, $appointment_date);
-
-            $start_time = new DateTime($appointment_date . Hospitals :: OPENING_TIME);
-            $end_time = new DateTime($appointment_date . Hospitals :: CLOSING_TIME);
-            
-            // Times open for appointments
-            $times = [];
-            // Index of the current appointment
-            $curr_index = 0;
-            
-            //Adding all possible appointments that are different from the ones already made
-            while ($start_time < $end_time){
-                if ($curr_index < count($res) && $start_time->format("H:i:s") == $res[$curr_index]->appointment_time)
-                    $curr_index++;
-                else
-                    $times[] = $start_time->format("H:i");
-                    
-                $start_time->add(new DateInterval('PT' . self::DEFAULT_DURATION . 'M'));   
-            }
-            return $times;
+            $affectred_rows = $stm->rowCount();
+            if ($affectred_rows != 1)
+                throw new AffectedRowsException($affectred_rows, 1);
+            return $success;
         }
     }
 ?>
