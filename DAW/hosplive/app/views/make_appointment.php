@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../public/make_appointment.js?$$REVISION$$"></script>
+    <script src="../../public/make_appointments.js?$$REVISION$$"></script>
     <title>Make Appointments</title>
+    <div id="constants_make_appointments" hidden>
+        <option id="opening_time_make_appointments" value="<?= Hospitals :: OPENING_TIME ?>"><?= Hospitals :: OPENING_TIME ?></option>
+        <option id="closing_time_make_appointments" value="<?= Hospitals :: CLOSING_TIME ?>"><?= Hospitals :: CLOSING_TIME ?></option>
+        <option id="app_duration_make_appointments" value="<?= Appointments :: DEFAULT_DURATION ?>"><?= Appointments :: DEFAULT_DURATION ?></option>
+    </div>
 </head>
 <body>
     <div>
@@ -31,7 +36,7 @@
         </div>
 
         <select id="medic_select" disabled>
-            <option selected disabled>Select medic</option>
+            <option id="select_medic" selected disabled>Select medic</option>
         </select>
 
         <!--Better solution here-->
@@ -39,10 +44,9 @@
         <input type="date" id="date_input" disabled>
 
         <div>
-            <input type="time" required id="time_input" list="time_list" min=<?= Hospitals :: OPENING_TIME ?> max=<?= Hospitals :: CLOSING_TIME ?> step=<?= Appointments :: DEFAULT_DURATION * 60 ?> disabled>
-            <datalist id="time_list">
-                <option disabled>Select Time</option>
-            </datalist>
+            <select id='time_select' disabled>
+                <option id="select_time" selected disabled>Select Time</option>
+            </select>
         </div>
         <input type="submit" value="Make Appointment" id="fill_form_btn">
     </div>
