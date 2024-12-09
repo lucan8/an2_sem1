@@ -1,12 +1,23 @@
 <?php
+    require_once "utils/utils.php";
 class AppointmentsController {
     public static function index() {
         if ($_SERVER["REQUEST_METHOD"] == "GET"){
+            //Render the layout
             require_once "app/views/layout.php";
+            // Render make_appointment
             self::makeAppointment();
+            
+            // Render appointments
             require_once "app/models/Appointments.php";
             //TODO: Get the user id from the session
             $appointments = Appointments::getAppointments(1);
+
+            //Setting the correct format for the time
+            foreach ($appointments as &$app){
+                $app['time'] = getHoursAndMinutes($app['time']);
+            }
+
             require_once "app/views/appointments.php";
         }
     }
@@ -29,7 +40,7 @@ class AppointmentsController {
         //Get all information from form and insert it into the database
         else if ($_SERVER["REQUEST_METHOD"] == "POST"){
             $res = ["ok" => true];
-            //TODO: Check if the date is in the future
+
             //Getting the unset parameters
             $unset_parameters = array_filter(array_keys(get_class_vars(self::class)), function($param){
                 return !isset($_POST[$param]) || $_POST[$param] == "";
@@ -46,7 +57,6 @@ class AppointmentsController {
             require_once "app/models/Appointments.php";
             require_once "app/models/Hospitals.php";
             
-            //Setting the data to be inserted
             $app = new AppointmentsData();
             $app->set((int)$_POST["user_id"], (int)$_POST["hospital_id"], (int)$_POST["medic_id"],
                       (int)$_POST["room_id"], $_POST["appointment_date"], $_POST["appointment_time"]);
@@ -175,8 +185,8 @@ class AppointmentsController {
         echo json_encode($res);
     }
 
-    //Gets the available times for a given hospital, medic and date
-    public static function getFreeTimeIntervals() {
+    //Gets the unavailable times for a given hospital, medic and date
+    public static function getUnavailableTimes() {
         $res = ["ok" => true];
 
         //Only accepting get requests
@@ -200,10 +210,14 @@ class AppointmentsController {
         }
 
         $res["data"] = [];
-        //Getting the available times
+        //Getting the unavailable times
         try{
             require_once "app/models/Appointments.php";
-            $res["data"]["times"] = Appointments::getFreeTimeIntervals((int)$_GET["hospital_id"], (int)$_GET["medic_id"], $_GET["appointment_date"]);
+            $appointments = Appointments::getByHospMedDate((int)$_GET["hospital_id"],
+                                                           (int)$_GET["medic_id"],
+                                                           $_GET["appointment_date"]);
+            $res["data"]["times"] = array_map(function(AppointmentsData $app){return getHoursAndMinutes($app->appointment_time);},
+                                              $appointments);
         } catch (Exception $e){
             $res["error"] = $e->getMessage();
             $res["ok"] = false;
