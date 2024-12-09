@@ -1,4 +1,7 @@
 <?php
+    require_once 'exceptions/FileOpenException.php';
+    require_once 'constants.php';
+
     function getNrLines($file_name){
         $file = fopen($file_name, "r");
         if (!$file)
@@ -11,5 +14,9 @@
         }
         fclose($file);
         return $nr_lines;
+    }
+
+    function getHoursAndMinutes(string $time): string{
+        return substr($time, 0, strlen(Constants :: TIME_FORMAT));
     }
 ?>
