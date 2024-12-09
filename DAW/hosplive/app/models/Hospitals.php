@@ -15,10 +15,10 @@
     }
 
     class Hospitals extends Entity{
-        public const OPENING_TIME = "08:00:00";
-        public const CLOSING_TIME = "22:00:00";
+        public const OPENING_TIME = "08:00";
+        public const CLOSING_TIME = "22:00";
         // Returns hospital from passed county
-        public static function getByCounty(int $county_id): HospitalsData{
+        public static function getByCounty(int $county_id): HospitalsData|false{
             $query = "SELECT * FROM " . static::class . " WHERE county_id = ?";
             self :: printQuery($query, [$county_id]);
 
