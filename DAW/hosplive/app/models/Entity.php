@@ -1,5 +1,6 @@
 <?php
 require_once "exceptions/FileOpenException.php";
+require_once "exceptions/AffectedRowsException.php";
 abstract class EntityData{}
 abstract class Entity{
     private const QUERY_LOG_FILE = "query_log.txt";
@@ -63,7 +64,26 @@ abstract class Entity{
 
         //Executing the query
         $stm = self::$conn->prepare($query);
-        return $stm->execute($inserted_values);
+        $success = $stm->execute($inserted_values);
+
+        $affectred_rows = $stm->rowCount();
+        if ($affectred_rows != 1)
+            throw new AffectedRowsException($affectred_rows, 1);
+        return $success;
+    }
+
+    public static function removeById(int $id): bool{
+        $id_column = array_keys(get_class_vars(static::class))[0];
+        $query = "DELETE FROM " . static::class . " WHERE ? = ?";
+        self::printQuery($query, [$id_column, $id]);
+
+        $stm = self::$conn->prepare($query);
+        $success = $stm->execute([$id_column, $id]);
+
+        $affectred_rows = $stm->rowCount();
+        if ($affectred_rows != 1)
+            throw new AffectedRowsException($affectred_rows, 1);
+        return $success;
     }
 
     public static function getAll(): array{
