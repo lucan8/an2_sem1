@@ -8,15 +8,23 @@ addEventListener("DOMContentLoaded", (event) => {
     let spec_input = document.getElementById("specialization_input");
 
     let medic_select = document.getElementById("medic_select");
+    let select_medic_opt = document.getElementById("select_medic");
     let chosen_medic_in = document.getElementById("medic_id");
 
     let date_input = document.getElementById("date_input");
     date_input.min = toDateInputValue(new Date());
     let chosen_date_in = document.getElementById("appointment_date");
 
-    let time_input = document.getElementById("time_input");
-    let time_list = document.getElementById("time_list");
+    let time_select = document.getElementById("time_select");
+    //let time_list = document.getElementById("time_list");
     let chosen_time_in = document.getElementById("appointment_time");
+    let op_time_opt = document.getElementById("opening_time_make_appointments");
+    let cl_time_opt = document.getElementById("closing_time_make_appointments");
+    let app_duration = document.getElementById("app_duration_make_appointments");
+    let select_time_opt = document.getElementById("select_time");
+
+    //Filling the time list with all possible times for appointments
+    fillTimeOptions(date_input.min, time_select);
 
     let fill_form_btn = document.getElementById("fill_form_btn");
     let app_form = document.getElementById("appointment_form");
@@ -50,12 +58,11 @@ addEventListener("DOMContentLoaded", (event) => {
     });
 
     date_input.addEventListener("change", function(event){
-        resetTime();
         if (event.target.value)
-            fillTimeOptions();
+            getSetTimeOptions();
     });
 
-    time_input.addEventListener("change", function(event){
+    time_select.addEventListener("change", function(event){
         fetch("getFreeRoom?hospital_id=" + chosen_hospital_in.value +
                 "&appointment_date=" + date_input.value + 
                 "&appointment_time=" + event.target.value)
@@ -155,9 +162,9 @@ addEventListener("DOMContentLoaded", (event) => {
         medic_select.disabled = false;
     }
 
-    //Fetches available times for the chosen hospital, medic and date and adds them to the time input list
-    function fillTimeOptions(){
-        fetch('getFreeTimeIntervals?hospital_id=' + chosen_hospital_in.value +
+    //Fetches unavailable times for the chosen medic and date, and enables times different from those
+    function getSetTimeOptions(){
+        fetch('getUnavailableTimes?hospital_id=' + chosen_hospital_in.value +
                 '&medic_id=' + medic_select.value +
                 '&appointment_date=' + date_input.value)
                 .then(response => {
@@ -167,23 +174,97 @@ addEventListener("DOMContentLoaded", (event) => {
                             console.log(res['error']);
                             return;
                         }
-                        res['data']['times'].forEach(time => addOption(time_list, time, time));
+                        enableFreeTimeIntervals(res['data']['times'], time_select);
+                        time_select.disabled = false;
                     });
                 });
-        time_input.disabled = false;
+    }
+
+    //Disable the options that are in the unavailable times array, enable the rest
+    //Both arrays are sorted
+    function enableFreeTimeIntervals(unavailable_times, time_options){
+        let u_time_index = 0;
+        let t_options_index = 0;
+
+        console.log(unavailable_times);
+
+        // Iterate through all options, if curr option is equal to unavailable time
+        // We disable the option and go to the next unavailable time
+        // Otherwise the option gets enabled because it's free
+        while (u_time_index < unavailable_times.length){
+            let u_time = unavailable_times[u_time_index];
+            let time_option = time_options.children[t_options_index];
+            let time_value = time_option.value;
+
+            console.log(u_time, time_value);
+
+            //Skipping past "select time" option
+            if (time_option.id == "select_time")
+                t_options_index++;
+            else if (u_time == time_value){
+                    time_option.disabled = true;
+                    time_option.hidden = true;
+                    u_time_index++;
+                    t_options_index++;
+                }
+                else if (u_time > time_value){
+                    time_option.disabled = false;
+                    time_option.hidden = false;
+                    t_options_index++;
+                }
+                else
+                    u_time_index++;
+
+        }
+
+        // Time options include unvailable times so we need to enable the rest
+        while (t_options_index < time_options.childElementCount){
+            time_options.children[t_options_index].disabled = false;
+            time_options.children[t_options_index].hidden = false;
+            t_options_index++;
+        }
+        select_time_opt.disabled = true;
+        select_time_opt.selected = true;
+    }
+
+    //Adds all possible appointments times between the min and max time of the time input with specified step
+    function fillTimeOptions(date, time_options){
+        console.log(time_options.childElementCount);
+        //If there are already options, don't add more
+        if (time_options.childElementCount > 1) return;
+       
+        let start = new Date(date + " " + op_time_opt.value);
+        let end = new Date(date + " " + cl_time_opt.value);
+
+        //In minutes
+        //TO DO: Make this a parameter
+        let step = parseInt(app_duration.value);
+    
+        while (start.getTime() < end.getTime()){
+            let time_string = getHoursAndMinutes(start);
+            addOption(time_options, time_string, time_string);
+
+            start.setMinutes(start.getMinutes() + step);
+        }
+
     }
 
     //Fills the hidden form with the inputed data
     function fillForm(){
         chosen_medic_in.value = medic_select.value;
         chosen_date_in.value = date_input.value;
-        chosen_time_in.value = time_input.value;
+        chosen_time_in.value = time_select.value;
     }
 
     function toDateInputValue(dateObject){
         let local = new Date(dateObject);
         local.setMinutes(dateObject.getMinutes() - dateObject.getTimezoneOffset());
         return local.toJSON().slice(0,10);
+    }
+
+    //Returns the time as string in HH:MM format
+    function getHoursAndMinutes(date_time){
+        return ("0" + date_time.getHours()).slice(-2) + ":" + ("0" + date_time.getMinutes()).slice(-2)
     }
 
     //Used moslty for emptying the suggestions and options and disabling the associated input
@@ -208,7 +289,7 @@ addEventListener("DOMContentLoaded", (event) => {
     function resetMedics(){
         resetInput(medic_select, medic_select);
         resetDate();
-        medic_select.children[0].selected = true;
+        select_medic_opt.selected = true;
         chosen_medic_in.value = "";
 
     }
@@ -218,8 +299,10 @@ addEventListener("DOMContentLoaded", (event) => {
         resetTime();
         chosen_date_in.value = "";
     }
+
     function resetTime(){
-        resetInput(time_input, time_list);
+        resetInput(time_select);
+        select_time_opt.selected = true;
         chosen_room_in.value = "";
         chosen_time_in.value = "";
     }
