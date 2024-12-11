@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdbool.h>
 #define MAX_RESOURCES 5
 
 pthread_mutex_t mutex;
@@ -16,11 +17,6 @@ int increase_count(int count);
 int main(){
     int nr_threads = 10;
 
-    if (pthread_mutex_init(&mutex, NULL) != 0){
-        perror(NULL);
-        return -1;
-    }
-
     // Allocating memory for the threads
     pthread_t* threads = malloc(nr_threads * sizeof(pthread_t));
     if (threads == NULL){
@@ -30,6 +26,15 @@ int main(){
     // Allocating memory for the numbers used by the thread's function
     int* numbers = malloc(nr_threads * sizeof(pthread_t));
     if (numbers == NULL){
+        free(threads);
+        perror(NULL);
+        return -1;
+    }
+
+    if (pthread_mutex_init(&mutex, NULL) != 0){
+        free(threads);
+        free(numbers);
+
         perror(NULL);
         return -1;
     }
@@ -55,14 +60,14 @@ int main(){
             else if (error != 0)
                 printf("Thread %ld failed\n", threads[i]);
         }
-        
+
+    free(threads);
+    free(numbers);
+
     if (pthread_mutex_destroy(&mutex) != 0){
         perror(NULL);
         return -1;
     }
-
-    free(threads);
-    free(numbers);
 
     return 0;
 }
@@ -70,18 +75,19 @@ int main(){
 void* runner_func(void* args){
     int count = *(int*)args;
 
-    // int* ret = malloc(sizeof(int));
-    // if (ret == NULL){
-    //     perror(NULL);
-    //     return ;
-    // }
-
     if (count > MAX_RESOURCES){
         printf("Thread %ld asked for %d resources but the maximum is %d\n",
                pthread_self(), count, MAX_RESOURCES);
         return -1;
     }
-    decrease_count(count);
+    
+    //decrease_count returns -1 when not enough resources are available
+    //So we loop until enough resources are available
+    if (decrease_count(count) == -1){
+            printf("Thread %ld: Waiting for %d resources...\n",
+                    pthread_self(), count);
+            while (decrease_count(count) == -1);
+    }
     increase_count(count);
     return 0;
 }
@@ -91,11 +97,8 @@ int decrease_count(int count){
     
     //If not enough resources are available we unlock the mutex and wait for resources
     if (available_resources < count){
-        printf("Thread %ld: Waiting for %d resources...\n", pthread_self(), count);
         pthread_mutex_unlock(&mutex);
-
-        while (available_resources < count);
-        pthread_mutex_lock(&mutex);
+        return -1;
     }
 
     available_resources -= count;
@@ -103,6 +106,7 @@ int decrease_count(int count){
             pthread_self(), count, available_resources);
 
     pthread_mutex_unlock(&mutex);
+
     return 0;
 }
 
@@ -114,6 +118,5 @@ int increase_count(int count){
             pthread_self(), count, available_resources);
 
     pthread_mutex_unlock(&mutex);
-
     return 0;
 }

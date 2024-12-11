@@ -114,12 +114,13 @@ int main(int argc, char* argv[]){
     //Freeing remaining resources
     free(input_numbers);
 
-    if (shm_unlink(shm_name) < 0){
+    if (munmap(parent_ptr, shm_size)){
         perror(NULL);
+        shm_unlink(shm_name);
         return -1;
     }
 
-    if (munmap(parent_ptr, shm_size)){
+    if (shm_unlink(shm_name) < 0){
         perror(NULL);
         return -1;
     }

@@ -9,7 +9,7 @@
 pthread_mutex_t mutex;
 //Only used for barrierPoint1()
 sem_t semaphore;
-
+unsigned int nr_waiting = 0;
 //For barrierPoint()
 struct Barrier{
     unsigned int nr_waiting;
@@ -33,7 +33,8 @@ int main(){
         return -1;
     }
 
-    if (sem_init(&semaphore, 0, NR_THREADS) != 0){
+    if (sem_init(&semaphore, 0, 0) != 0){
+        pthread_mutex_destroy(&mutex);
         perror(NULL);
         return -1;
     }
@@ -41,11 +42,14 @@ int main(){
     // Allocating memory for the threads
     pthread_t* threads = malloc(NR_THREADS * sizeof(pthread_t));
     if (threads == NULL){
+        pthread_mutex_destroy(&mutex);
+        sem_destroy(&semaphore);
+
         perror(NULL);
         return -1;
     }
 
-    //initBarier(NR_THREADS);
+    initBarier(NR_THREADS);
     for (int i = 0; i < NR_THREADS; ++i){    
         //Creating the threads to execute runner
         if (pthread_create(&threads[i], NULL, runner_func, NULL) != 0){
@@ -54,6 +58,7 @@ int main(){
         }
     }
 
+    //Joining threads
     for (int i = 0; i < NR_THREADS; ++i)
         if (threads[i] != 0){
             int* error;
@@ -63,7 +68,11 @@ int main(){
                 printf("Thread %ld failed\n", threads[i]);
         }
     
+    //Freeing resources
+    free(threads);
+
     if (pthread_mutex_destroy(&mutex) != 0){
+        sem_destroy(&semaphore);
         perror(NULL);
         return -1;
     }
@@ -72,8 +81,6 @@ int main(){
         perror(NULL);
         return -1;
     }
-
-    free(threads);
     return 0;
 }
 
@@ -111,35 +118,28 @@ void barrierPoint(){
 }
 
 void barrierPoint1(){
+    if (NR_THREADS - nr_waiting > 1){
+        pthread_mutex_lock(&mutex);
+        nr_waiting ++;
+        pthread_mutex_unlock(&mutex);
+        sem_wait(&semaphore);
+    }
+    else
+        printf("Barrier lifted!\n");
+
     pthread_mutex_lock(&mutex);
+    if (nr_waiting != 0){
+        sem_post(&semaphore);
+        nr_waiting--;
+    }
 
-    //Getting remaining threads needed to lift barrier
-    unsigned int remaining;
-    sem_getvalue(&semaphore, &remaining);
-
-    printf("Remaining %d\n", remaining);
-    sem_wait(&semaphore);
-
-    pthread_mutex_unlock(&mutex);
-
-    //Busy waiting for the rest of the threads
-    while (remaining > 1 && barrier_down);
-    
-    pthread_mutex_lock(&mutex);
-
-    //Lifting the barrier and passing the barrier
-    barrier_down = false;
-    sem_post(&semaphore);
-
-    if (remaining == 0)
-        barrier_down = true;
-    
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&mutex);   
 }
 
 void* runner_func(void* args){
     printf("Thread %ld reached the barrier!\n", pthread_self());
     barrierPoint1();
+    //barrierPoint();
     printf("Thread %ld passed the barrier!\n", pthread_self());
-    return NULL;
+    return 0;
 }
