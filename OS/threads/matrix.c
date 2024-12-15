@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-//used for int matrices and pthread_t matrices
 struct matrix{
     int** mat;
     int nr_lines, nr_col;
@@ -14,6 +13,7 @@ struct calcMatrixArgs{
    int line, column, k;
 };
 
+//FUNCTION WILL FREE ARGS
 //Calc elem at line, col for the resulting matrix(m3) which is m1 * m2
 void* calcMatrixELement(void* args);
 
@@ -25,10 +25,14 @@ void printResults(FILE* matrix_out, const struct matrix* m1,
 //creates matrix and initializes it from file
 struct matrix readMatrix(FILE* fin);
 
-//Creates(and initializes with 0) matrix 
+//Initializes matrix values
+void initMatrixValues(struct matrix* m);
+
+//Creates and initializes  matrix 
 struct matrix createMatrix(int nr_lines, int nr_col);
 
-void freeMatrix(const struct matrix* m);
+//Frees the matrix pointers, invalidates them, and sets nr_col and nr_lines to 0
+void freeMatrix(struct matrix* m);
 
 int main(){
     FILE* matrix_in = fopen("matrix.in", "r");
@@ -38,20 +42,26 @@ int main(){
     }
 
     struct matrix m1 = readMatrix(matrix_in);
-    if (m1.mat == NULL){    
+    if (m1.mat == NULL){ 
+        fclose(matrix_in);   
         perror("Alloc for m1 failed");
         return -1;
     }
 
     struct matrix m2 = readMatrix(matrix_in);
-    if (m2.mat == NULL){    
+    if (m2.mat == NULL){  
+        fclose(matrix_in);
+        freeMatrix(&m1);  
         perror("Alloc for m2 failed");
         return -1;
     }
 
     
     struct matrix m3 = createMatrix(m1.nr_lines, m2.nr_col);
-    if (m3.mat == NULL){    
+    if (m3.mat == NULL){
+        fclose(matrix_in);
+        freeMatrix(&m1);
+        freeMatrix(&m2);    
         perror("Alloc for m3 failed");
         return -1;
     }
@@ -61,6 +71,10 @@ int main(){
     pthread_t* threads = malloc(sizeof(pthread_t) * m3.nr_lines * m3.nr_col);
     size_t nr_threads = 0;
     if (threads == NULL){
+        fclose(matrix_in);
+        freeMatrix(&m1);
+        freeMatrix(&m2);
+        freeMatrix(&m3);
         perror(NULL);
         return -1;
     }
@@ -72,11 +86,25 @@ int main(){
             //Using dynamically allocated args
             //Because local one might get changed before the thread finishes execution
             struct calcMatrixArgs* args = malloc(sizeof(struct calcMatrixArgs));
+
+            if (args == NULL){
+                fclose(matrix_in);
+
+                freeMatrix(&m1), freeMatrix(&m2), freeMatrix(&m3);
+                
+                free(threads);
+                perror(NULL);
+                return -1;
+            }
             *args = (struct calcMatrixArgs){.m1 = m1.mat, .m2 = m2.mat, .m3 = m3.mat,
                                             .line  = i, .column = j, .k = m1.nr_col};
             //Attemping to create thread for the calculation of current result elem
-            //FUNCTION WILL FREE ARGS
             if (pthread_create(&threads[nr_threads++], NULL, calcMatrixELement, args)){
+                    fclose(matrix_in);
+
+                    freeMatrix(&m1), freeMatrix(&m2), freeMatrix(&m3);
+                    
+                    free(threads);
                     perror(NULL);
                     return -1;
                 }
@@ -85,6 +113,11 @@ int main(){
     //Joining threads with parent
     for (int i = 0; i < m3.nr_lines * m3.nr_col; ++i)
             if (pthread_join(threads[i], NULL)){
+                fclose(matrix_in);
+        
+                freeMatrix(&m1),freeMatrix(&m2), freeMatrix(&m3);
+        
+                free(threads);
                 perror(NULL);
                 return -1;
             }
@@ -92,6 +125,11 @@ int main(){
     //Open file for printing the result matrix
     FILE* matrix_out = fopen("matrix.out", "w");
     if (matrix_out == NULL){
+        fclose(matrix_in);
+
+        freeMatrix(&m1), freeMatrix(&m2), freeMatrix(&m3);
+        
+        free(threads);
         perror(NULL);
         return -1;
     }
@@ -103,7 +141,7 @@ int main(){
     fclose(matrix_in), fclose(matrix_out);
 }
 
-//Calc elem at line, col for the resulting matrix(m3) which is m1 * m2
+
 void* calcMatrixELement(void* args){
     //Retrieving the arguments
     struct calcMatrixArgs* m_args = args;
@@ -147,26 +185,36 @@ void printResults(FILE* matrix_out, const struct matrix* m1, const struct matrix
     fprintf(matrix_out, "\n");
 }
 
+void initMatrixValues(struct matrix* m){
+    for (int i = 0; i < m->nr_lines; ++i)
+       for (int j = 0; j < m->nr_col; ++j)
+            m->mat[i][j] = 0;
+}
+
+
 struct matrix createMatrix(int nr_lines, int nr_col){
     struct matrix res = {NULL, nr_lines, nr_col};
     res.mat = malloc(sizeof(int*) * nr_lines);
 
     if (res.mat == NULL)
         return res;
+    
+    int nr_lines_created = 0;
 
     for (int i = 0; i < res.nr_lines; ++i){
         //Allocating memory for entire line
         res.mat[i] = malloc(sizeof(int) * nr_col);
-        if (res.mat == NULL)
+        //Allocation failes, we free the part of the created matrix
+        if (res.mat[i] == NULL){
+            res.nr_lines = nr_lines_created;
+            freeMatrix(&res);
             return res;
-
-        //Initialzing each elem with 0
-        for (int j = 0; j < res.nr_col; ++j)
-            res.mat[i][j] = 0;
+        }
+        nr_lines_created++;
     }
+    initMatrixValues(&res);
     return res;
 }
-
 
 struct matrix readMatrix(FILE* fin){
     int nr_lines, nr_col;
@@ -183,8 +231,14 @@ struct matrix readMatrix(FILE* fin){
     return res;
 }
 
-void freeMatrix(const struct matrix* m){
-    for (int i = 0; i < m->nr_lines; ++i)
+void freeMatrix(struct matrix* m){
+    for (int i = 0; i < m->nr_lines; ++i){
         free(m->mat[i]);
+        m->mat[i] = NULL;
+    }
     free(m->mat);
+
+    m->mat = NULL;
+    m->nr_col = 0;
+    m->nr_lines = 0;
 }
