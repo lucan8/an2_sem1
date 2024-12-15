@@ -3,13 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../public/make_appointments.js?$$REVISION$$"></script>
+    <script src="../../public/make_appointments.js?$$REVISION$$" type='module'></script>
     <title>Make Appointments</title>
-    <div id="constants_make_appointments" hidden>
-        <option id="opening_time_make_appointments" value="<?= Hospitals :: OPENING_TIME ?>"><?= Hospitals :: OPENING_TIME ?></option>
-        <option id="closing_time_make_appointments" value="<?= Hospitals :: CLOSING_TIME ?>"><?= Hospitals :: CLOSING_TIME ?></option>
-        <option id="app_duration_make_appointments" value="<?= Appointments :: DEFAULT_DURATION ?>"><?= Appointments :: DEFAULT_DURATION ?></option>
-    </div>
 </head>
 <body>
     <div>
@@ -19,7 +14,7 @@
                 <option disabled>Select County</option>
                 <?php 
                     foreach ($counties as $county){
-                        echo "<option value='{$county->county_name}' id='{$county->county_id}' name='{$county->county_name}' disabled>{$county->county_name}</option>";
+                        echo "<option value='{$county->county_name}' id='{$county->county_name}' name='{$county->county_id}' disabled>{$county->county_name}</option>";
                     }?>
             </datalist>
         </div>
@@ -30,7 +25,7 @@
                 <option disabled>Select Specialization</option>
                 <?php 
                     foreach ($specializations as $spec){
-                        echo "<option value='{$spec->specialization_name}' id='{$spec->specialization_id}' name='{$spec->specialization_name}' disabled>{$spec->specialization_name}</option>";
+                        echo "<option value='{$spec->specialization_name}' id='{$spec->specialization_name}' name='{$spec->specialization_id}' disabled>{$spec->specialization_name}</option>";
                     }?>
             </datalist>
         </div>
@@ -60,6 +55,7 @@
         <input type="date" id="appointment_date" name="appointment_date">
         <input type="time" id="appointment_time" name="appointment_time">
         <input type="number" id="room_id" name="room_id">
+        <input type="number" id="duration" name="duration">
     </form>
 </body>
 </html>
