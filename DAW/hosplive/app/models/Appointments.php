@@ -47,7 +47,7 @@
         public static function getAppointments($user_id): array{
             $query = "SELECT a.appointment_id as id, c.county_name as county,
                              m.medic_name, m.medic_id, h.hospital_id, a.appointment_date as date,
-                             a.appointment_time as time, a.room_id as room
+                             a.appointment_time as time, a.room_id as room, a.duration
                       FROM " . static::class . " a
                       JOIN hospitals h ON a.hospital_id = h.hospital_id
                       JOIN medics m ON a.medic_id = m.medic_id
@@ -98,6 +98,20 @@
             $stm = self::$conn->prepare($query);
             $success = $stm->execute([$appointment_date, $appointment_time, $appointment_id]);
 
+            $affectred_rows = $stm->rowCount();
+            if ($affectred_rows != 1)
+                throw new AffectedRowsException($affectred_rows, 1);
+            return $success;
+        }
+        
+        public static function removeById(int $id): bool{
+            $query = "DELETE FROM " . static::class . " WHERE appointment_id = ?";
+            self::printQuery($query, [$id]);
+    
+            $stm = self::$conn->prepare($query);
+            $success = $stm->execute([$id]);
+    
+            //Checking if exactly one row was affected
             $affectred_rows = $stm->rowCount();
             if ($affectred_rows != 1)
                 throw new AffectedRowsException($affectred_rows, 1);
