@@ -1,14 +1,15 @@
 <?php
 $routes = [
     "hosplive/index" => ["Controller", "index"],
-    "hosplive/make_appointment" => ["AppointmentsController", "makeAppointment"],
-    "hosplive/getMedics" => ["AppointmentsController", "getMedics"],
-    "hosplive/getUnavailableTimes" => ["AppointmentsController", "getUnavailableTimes"],
-    "hosplive/getFreeRoom" => ["AppointmentsController", "getFreeRoom"],
-    "hosplive/getAppointments" => ["AppointmentsController", "getAppointments"],
-    "hosplive/appointments" => ["AppointmentsController", "index"],
-    "hosplive/cancel_appointment" => ["AppointmentsController", "cancelAppointment"],
-    "hosplive/edit_appointment" => ["AppointmentsController", "editAppointment"],
+    "hosplive/appointments/make_appointment" => ["AppointmentsController", "add"],
+    "hosplive/appointments/getMedics" => ["AppointmentsController", "getMedics"],
+    "hosplive/appointments/getUnavailableTimes" => ["AppointmentsController", "getUnavailableTimes"],
+    "hosplive/appointments/getFreeRoom" => ["AppointmentsController", "getFreeRoom"],
+    "hosplive/appointments/getAppointments" => ["AppointmentsController", "getA"],
+    "hosplive/appointments/appointments" => ["AppointmentsController", "index"],
+    "hosplive/appointments/cancel_appointment" => ["AppointmentsController", "remove"],
+    "hosplive/appointments/edit_appointment" => ["AppointmentsController", "edit"],
+    "hosplive/appointments/getConstants" => ["AppointmentsController", "getConstants"]
 ];
 
 class Router {
@@ -33,7 +34,6 @@ class Router {
             // Call the method
             return $controller::$method();
         }
-        
         require_once "app/views/404.php";
     }
 }
