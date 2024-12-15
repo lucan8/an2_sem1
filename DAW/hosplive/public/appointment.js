@@ -1,11 +1,12 @@
-addEventListener("DOMContentLoaded", event => {
+import * as utils_app from './utils_appointments.js';
+
+addEventListener("DOMContentLoaded", async event => {
     setInitialData();
-    let op_time_opt = document.getElementById("opening_time_appointments");
-    let cl_time_opt = document.getElementById("closing_time_appointments");
-    let app_duration = document.getElementById("app_duration_appointments");
+    const app_constants = await utils_app.getConstants();
 
     Array.from(document.getElementsByClassName("cancel_app")).forEach(btn => {
         btn.addEventListener("click", event => {
+            //Getting the appointment id
             let appointment_id = event.target.parentNode.id;
             let data = new FormData();
             data.append("appointment_id", appointment_id);
@@ -17,6 +18,7 @@ addEventListener("DOMContentLoaded", event => {
             }).then(response => response.json().then(resp => {
                     if (resp.ok){
                         event.target.parentNode.remove();
+                        alert("Appointment cancelled successfully");
                     }
                     else{
                         alert("Error cancelling appointment");
@@ -29,22 +31,25 @@ addEventListener("DOMContentLoaded", event => {
 
     Array.from(document.getElementsByClassName("edit_app")).forEach(btn => {
         btn.addEventListener("click", event => {
+            //Getting the appointment id and the corresponding date and time elements
             let appointment_id = event.target.parentNode.id;
 
             let date_elem = document.getElementById("date_" + appointment_id);
             let time_elem = document.getElementById("time_" + appointment_id);
 
+            //Adding the data to the formData object
             let data = new FormData();
             data.append("appointment_id", appointment_id);
             data.append("appointment_date", date_elem.value);
             data.append("appointment_time", time_elem.value);
 
-            //Sending a post request to cancel the appointment
+            //Sending a post request to edit the appointment
             fetch("edit_appointment", {
                 method: "POST",
                 body: data
             }).then(response => response.json().then(resp => {
                     if (!resp.ok){
+                        //If the appointment was not edited we reset the date and time to the initial values
                         date_elem.value = date_elem.initial_date;
                         time_elem.value = time_elem.initial_time;
 
@@ -53,6 +58,7 @@ addEventListener("DOMContentLoaded", event => {
                     }
                     else{
                         alert("Appointment edited successfully");
+                        //Updating the initial date and time values
                         date_elem.initial_date = date_elem.value;
                         time_elem.initial_time = time_elem.value;
                     }
@@ -61,176 +67,89 @@ addEventListener("DOMContentLoaded", event => {
         });
     });
 
+    Array.from(document.getElementsByClassName("reset_changes")).forEach(btn => {
+        btn.addEventListener("click", event => {
+            //Getting the appointment id and the corresponding date and time elements
+            let appointment_id = event.target.parentNode.id;
+
+            let date_elem = document.getElementById("date_" + appointment_id);
+            let time_select = document.getElementById("time_" + appointment_id);
+
+            //Resetting the date and time to the initial values
+            date_elem.value = date_elem.initial_date;
+            Array.from(time_select).find(option => option.value == time_select.initial_time).selected = true;
+            time_select.value = time_select.initial_time;
+        })
+    })
+
 
     //Sets initial date and time for each appointment
     //Adds event listeners to the time inputs to fill the time options or enable the valid ones
     function setInitialData(){
         Array.from(document.getElementsByClassName("app_date")).forEach(elem => {
-            elem.min = toDateInputValue(new Date());
+            elem.min = utils_app.toDateInputValue(new Date());
             elem.initial_date = elem.value;
 
-            elem.addEventListener("change", event => {
+            elem.addEventListener("change", async event => {
                 //Should not use .parentNode.parentNode, but it works for now
                 let app_id = event.target.parentNode.parentNode.id;
                 let time_select = document.getElementById("time_" + app_id);
-                let medic_id = document.getElementById("medic_id_" + app_id).value;
-                let hospital_id = document.getElementById("hospital_id_" + app_id).value;
                 let date = event.target.value;
+                let medic_id = document.getElementById("medic_" + app_id).getAttribute("value");
+                let hospital_id = document.getElementById("hospital_" + app_id).getAttribute("value");
+                let duration = parseInt(document.getElementById("duration_" + app_id).getAttribute("value"));
+                
+                fillTimeOptions(date, time_select, app_constants.OPENING_TIME, app_constants.CLOSING_TIME, duration);
 
-                //Filling time options if needed
-                fillTimeOptions(date, time_select);
-                time_select.options[time_select.selectedIndex].selected = false;
-
-                //Changing the time options based on new date
-                getSetTimeOptions(time_select, medic_id, hospital_id, date);
+                //Enabling the time options based on the new date
+                let unavailable_times = await utils_app.getUnavailableTimes(medic_id, hospital_id, date);
+                utils_app.enableFreeTimeIntervals(unavailable_times, time_select.children);
+                
+                utils_app.selectFirstEnabledOption(time_select);
             })
         });
 
         Array.from(document.getElementsByClassName("app_time")).forEach(elem => {
             elem.initial_time = elem.value;
             // Adding one time event listener for filling and enabling time options
-            elem.addEventListener("click", event => {
+            elem.addEventListener("click", async event => {
                 //Should not use .parentNode.parentNode, but it works for now
                 let app_id = event.target.parentNode.parentNode.id;
                 let date_elem = document.getElementById("date_" + app_id);
-                let medic_id = document.getElementById("medic_id_" + app_id).value;
-                let hospital_id = document.getElementById("hospital_id_" + app_id).value;
+                let date = date_elem.value;
+                let medic_id = document.getElementById("medic_" + app_id).getAttribute("value");
+                let hospital_id = document.getElementById("hospital_" + app_id).getAttribute("value");
+                let duration = parseInt(document.getElementById("duration_" + app_id).getAttribute("value"));
+                let time_select = event.target;
 
-                // Keeping track whether the time options was filled or not
-                let filled = fillTimeOptions(date_elem.value, event.target);
-
-                //Only update time if date changed or the time options were filled
-                if (filled)
-                    getSetTimeOptions(event.target, medic_id, hospital_id, date_elem.value);
+                let filled = fillTimeOptions(date, time_select, app_constants.OPENING_TIME,
+                                             app_constants.CLOSING_TIME, duration);
+                //If time options was filled we need to fetch the unavailable times and disable them
+                if (filled){
+                    //Enabling the time options based on the new date
+                    let unavailable_times = await utils_app.getUnavailableTimes(medic_id, hospital_id, date);
+                    utils_app.enableFreeTimeIntervals(unavailable_times, time_select.children);
+                }
+                
             }, {once: true});
         });
     }
     
-    //Gets the unavailable times for the medic and hospital on the specified date
-    //Disables the options that are in the unavailable times array
-    //Selects the first time option that is enabled
-    function getSetTimeOptions(time_select, medic_id, hospital_id, date){
-        fetch('getUnavailableTimes?hospital_id=' + hospital_id +
-                '&medic_id=' + medic_id +
-                '&appointment_date=' + date)
-                .then(response => {
-                    response.json().then(res => {
-                        if (!res['ok']){
-                            alert("Failed to get available times(interal error)");
-                            console.log(res['error']);
-                            return;
-                        }
-                        enableFreeTimeIntervals(res['data']['times'], time_select);
-                        time_select.disabled = false;
-                        selectFirstEnabledOption(time_select)
-                    });
-                })
-    }
+    //Wrapper for fillTimeOptions from utils that removes the selected option, fills the time options and re-selects it
+    //Such that the initial time is in it's correct place(alwaysnot first)
+    function fillTimeOptions(date, time_options, op_time, cl_time, app_step){
+        if (time_options.childElementCount > 1)return false;
+        //Removing the selected option
+        let sel_opt = utils_app.removeSelectedOption(time_options);
 
-    //Disable the options that are in the unavailable times array, enable the rest
-    //Both arrays are sorted
-    function enableFreeTimeIntervals(unavailable_times, time_options){
-        console.log('enable')
-        let u_time_index = 0;
-        let t_options_index = 0;
-        //console.log(unavailable_times);
-
-        // Iterate through all options, if curr option is equal to unavailable time
-        // We disable the option and go to the next unavailable time
-        // Otherwise the option gets enabled because it's free
-        while (u_time_index < unavailable_times.length){
-            let u_time = unavailable_times[u_time_index];
-            let time_option = time_options.children[t_options_index];
-            let time_value = time_option.value;
-
-            //console.log(u_time, time_value);
-
-            if (u_time == time_value){
-                    time_option.disabled = true;
-                    time_option.hidden = true;
-                    u_time_index++;
-                    t_options_index++;
-                }
-                else if (u_time > time_value){
-                    time_option.disabled = false;
-                    time_option.hidden = false;
-                    t_options_index++;
-                }
-                else
-                    u_time_index++;
-
-        }
-
-        // Time options include unvailable times so we need to enable the rest
-        while (t_options_index < time_options.childElementCount){
-            time_options.children[t_options_index].disabled = false;
-            time_options.children[t_options_index].hidden = false;
-            t_options_index++;
-        }
-
-        //Not needed in the appoitnments version
-        // select_time_opt.disabled = true;
-        // select_time_opt.selected = true;
-    }
-
-    //Adds all possible appointments times between the min and max time of the time input with specified step
-    function fillTimeOptions(date, time_options){
-        //If there are already options, don't add more
-        if (time_options.childElementCount > 1) return false;
-
-        //Making a copy of the select_time option value and removing it
-        let selected_time_opt = time_options.options[time_options.selectedIndex];
-        let selected_time_val = new Date(date + " " + selected_time_opt.value);
-        selected_time_opt.remove();
+        //Filling the time options
+        utils_app.fillTimeOptions(date, time_options, op_time, cl_time, app_step);
         
-        //Getting the opening and closing time of the hospital
-        //TODO MOVE op_time and closing_time into header constants
-        let start = new Date(date + " " + op_time_opt.value);
-        let end = new Date(date + " " + cl_time_opt.value);
+        //Re-selecting the previously selected option
+        Array.from(time_options).find(option => option.value == sel_opt).selected = true;
+        time_options.value = sel_opt;
 
-        //In minutes
-        //TO DO: Make this a parameter
-        let step = parseInt(app_duration.value);
-    
-        while (start.getTime() < end.getTime()){
-            let time_string = getHoursAndMinutes(start);
-            let opt = addOption(time_options, time_string, time_string);
-            //Re-select the previously selected time
-            if (start.getTime() == selected_time_val.getTime())
-                opt.selected = true;
-
-            start.setMinutes(start.getMinutes() + step);
-        }
         return true;
     }
-
-    //Adds an option to option cont with the given value and text and returns the created option
-    function addOption(option_cont, option_value, option_text){
-        let option = document.createElement("option");
-        option.value = option_value;
-        option.text = option_text;
-        option_cont.appendChild(option);
-
-        return option;
-    }
-
-    function selectFirstEnabledOption(options){
-        for (opt of options.children)
-            if (!opt.disabled){
-                console.log(opt);
-                opt.selected = true;
-                return;
-            }
-    }
-
-    //Returns the time as string in HH:MM format
-    function getHoursAndMinutes(date_time){
-        return ("0" + date_time.getHours()).slice(-2) + ":" + ("0" + date_time.getMinutes()).slice(-2)
-    }
-
-    function toDateInputValue(dateObject){
-        let local = new Date(dateObject);
-        local.setMinutes(dateObject.getMinutes() - dateObject.getTimezoneOffset());
-        return local.toJSON().slice(0,10);
-    }
+    
 });
