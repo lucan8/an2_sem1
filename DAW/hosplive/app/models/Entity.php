@@ -35,8 +35,13 @@ abstract class Entity{
             throw new FileOpenException(self::QUERY_LOG_FILE);
     }
 
+    static function getConstants() {
+        $oClass = new ReflectionClass(static::class);
+        return $oClass->getConstants(ReflectionClassConstant::IS_PUBLIC);
+    }
+
     //Does not work when params is assoc array
-    //TODO: Replace ? with :key and pass assoc array
+    //TODO: Write custom replacer for ? in query
     public static function printQuery(string $query, array $params = []){
         if (count($params) != 0){
             $placeholders = array_fill(0, count($params), '?');
@@ -46,7 +51,6 @@ abstract class Entity{
         fwrite(self::$log_file, date("d/m/yy H:i:s: ") . $query . "\n");
     }
 
-    //TODO:Error checking
     public static function insert(EntityData $data): bool{
         //Setting the data as array and the placeholders(filtering out null values)
         $data_array = array_filter(get_object_vars($data));
@@ -65,20 +69,6 @@ abstract class Entity{
         //Executing the query
         $stm = self::$conn->prepare($query);
         $success = $stm->execute($inserted_values);
-
-        $affectred_rows = $stm->rowCount();
-        if ($affectred_rows != 1)
-            throw new AffectedRowsException($affectred_rows, 1);
-        return $success;
-    }
-
-    public static function removeById(int $id): bool{
-        $id_column = array_keys(get_class_vars(static::class))[0];
-        $query = "DELETE FROM " . static::class . " WHERE ? = ?";
-        self::printQuery($query, [$id_column, $id]);
-
-        $stm = self::$conn->prepare($query);
-        $success = $stm->execute([$id_column, $id]);
 
         $affectred_rows = $stm->rowCount();
         if ($affectred_rows != 1)
