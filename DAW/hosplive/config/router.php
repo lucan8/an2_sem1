@@ -1,15 +1,21 @@
 <?php
+//TODO: Add allowed roles
 $routes = [
     "hosplive/index" => ["Controller", "index"],
     "hosplive/appointments/make_appointment" => ["AppointmentsController", "add"],
     "hosplive/appointments/getMedics" => ["AppointmentsController", "getMedics"],
     "hosplive/appointments/getUnavailableTimes" => ["AppointmentsController", "getUnavailableTimes"],
     "hosplive/appointments/getFreeRoom" => ["AppointmentsController", "getFreeRoom"],
-    "hosplive/appointments/getAppointments" => ["AppointmentsController", "getA"],
+    "hosplive/appointments/getAppointments" => ["AppointmentsController", "getAppointments"],
     "hosplive/appointments/appointments" => ["AppointmentsController", "index"],
     "hosplive/appointments/cancel_appointment" => ["AppointmentsController", "remove"],
     "hosplive/appointments/edit_appointment" => ["AppointmentsController", "edit"],
-    "hosplive/appointments/getConstants" => ["AppointmentsController", "getConstants"]
+    "hosplive/appointments/getConstants" => ["AppointmentsController", "getConstants"],
+    "hosplive/auth/register" => ["AuthController", "index"],
+    "hosplive/auth/add_user" => ["AuthController", "add"],
+    "hosplive/auth/verify_user" => ["AuthController", "verifyUser"],
+    "hosplive/auth/login" => ["AuthController", "login"],
+    "hosplive/auth/logout"=> ["AuthController", "logout"]
 ];
 
 class Router {
