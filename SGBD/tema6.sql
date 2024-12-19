@@ -1,18 +1,17 @@
-DESC hospitals_t;
-CREATE table counties_t(
-    county_id NUMBER PRIMARY KEY,
-    county_name VARCHAR(15) UNIQUE NOT NULL
-);
-
-INSERT INTO counties_t VALUES(1, 'Bucuresti');
-INSERT INTO counties_t VALUES(2, 'Arges');
-INSERT INTO counties_t VALUES(3, 'Brasov');
-INSERT INTO counties_t VALUES(4, 'Valcea');
-INSERT INTO counties_t VALUES(5, 'Iasi');
-
-ALTER TABLE hospitals_t ADD county_id NUMBER;
-ALTER TABLE hospitals_t ADD FOREIGN KEY(county_id) REFERENCES counties_t(county_id);
-UPDATE hospitals_t SET county_id = hospital_id;
+--CREATE table counties_t(
+--    county_id NUMBER PRIMARY KEY,
+--    county_name VARCHAR(15) UNIQUE NOT NULL
+--);
+--
+--INSERT INTO counties_t VALUES(1, 'Bucuresti');
+--INSERT INTO counties_t VALUES(2, 'Arges');
+--INSERT INTO counties_t VALUES(3, 'Brasov');
+--INSERT INTO counties_t VALUES(4, 'Valcea');
+--INSERT INTO counties_t VALUES(5, 'Iasi');
+--
+--ALTER TABLE hospitals_t ADD county_id NUMBER;
+--ALTER TABLE hospitals_t ADD FOREIGN KEY(county_id) REFERENCES counties_t(county_id);
+--UPDATE hospitals_t SET county_id = hospital_id;
 
 CREATE OR REPLACE PACKAGE medics_hosp_pack AS
     PROCEDURE add_hosp (hosp_id hospitals_t.hospital_id%TYPE,
@@ -23,7 +22,7 @@ CREATE OR REPLACE PACKAGE medics_hosp_pack AS
                          years_exp medics_t.years_exp%TYPE,
                          spec_id medics_t.specialization_id%TYPE);
     FUNCTION valid_spec(spec_id medics_t.specialization_id%TYPE) RETURN NUMBER;
-    FUNCTION valid_county(county_id counties_t.county_id%TYPE) RETURN NUMBER;
+    FUNCTION valid_county(i_county_id counties_t.county_id%TYPE) RETURN NUMBER;
     FUNCTION valid_phone(phone_number hospitals_t.phone_number%TYPE) RETURN NUMBER;
     
 END medics_hosp_pack;
@@ -58,13 +57,13 @@ CREATE OR REPLACE PACKAGE BODY medics_hosp_pack AS
     
     FUNCTION valid_spec(spec_id medics_t.specialization_id%TYPE) RETURN NUMBER IS ret_val NUMBER;
         BEGIN 
-            SELECT COUNT(*) INTO ret_val FROM specializations WHERE specialization_id = spec_id;
+            SELECT COUNT(*) INTO ret_val FROM specializations_t WHERE specialization_id = spec_id;
             RETURN ret_val;
         END;
     
-    FUNCTION valid_county(county_id counties_t.county_id%TYPE) RETURN NUMBER IS ret_val NUMBER;
+    FUNCTION valid_county(i_county_id counties_t.county_id%TYPE) RETURN NUMBER IS ret_val NUMBER;
         BEGIN 
-            SELECT COUNT(*) INTO ret_val FROM counties_t WHERE county_id = county_id;
+            SELECT COUNT(*) INTO ret_val FROM counties_t WHERE county_id = i_county_id;
             RETURN ret_val;
         END;
     
@@ -83,10 +82,18 @@ CREATE OR REPLACE PACKAGE BODY medics_hosp_pack AS
     END medics_hosp_pack;
 /
             
-EXECUTE medics_hosp_pack.add_hosp(12, '0758.93022', 1);
-EXECUTE medics_hosp_pack.add_medic(8, 'Reaper', 4, 12);
+EXECUTE medics_hosp_pack.add_hosp(40, '075e893022', 1);
+EXECUTE medics_hosp_pack.add_medic(175, 'Reaper_joe', 4, 1);
 
 select * from medics_t;
+select * from hospitals_t;
+
+BEGIN
+    medics_hosp_pack.add_hosp(174, '0758276999', 100);
+    medics_hosp_pack.add_medic(77, 'CvrreveveG', 3, 74);
+END;
+/
+SELECT * FROM medics_t;
 select * from hospitals_t;
                         
                         
