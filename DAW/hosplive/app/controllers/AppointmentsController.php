@@ -1,8 +1,11 @@
 <?php
     require_once "utils/utils.php";
     require_once "AbstractController.php";
+    require_once "AuthController.php";
 class AppointmentsController implements AbstractController {
     public static function index() {
+        AuthController::checkLogged();
+
         if ($_SERVER["REQUEST_METHOD"] == "GET"){
             //Render the layout
             require_once "app/views/layout.php";
@@ -24,6 +27,8 @@ class AppointmentsController implements AbstractController {
     }
 
     public static function add() {
+        AuthController::checkLogged();
+        
         if ($_SERVER["REQUEST_METHOD"] == "GET"){
             require_once "app/models/Counties.php";
             $counties = Counties::getAll();
@@ -75,6 +80,8 @@ class AppointmentsController implements AbstractController {
     }
 
     public static function remove(){
+        AuthController::checkLogged();
+
         $res = ["ok" => true];
         //Only accepting post requests
         if ($_SERVER["REQUEST_METHOD"] != "POST"){
@@ -107,6 +114,8 @@ class AppointmentsController implements AbstractController {
     }
 
     public static function edit(){
+        AuthController::checkLogged();
+
         $res = ["ok" => true];
         //Only accepting post requests
         if ($_SERVER["REQUEST_METHOD"] != "POST"){
@@ -141,6 +150,8 @@ class AppointmentsController implements AbstractController {
     //Gets the hospital associated with the passed county,
     //Then gets the medics from that hospital with the passed specialization
     public static function getMedics() {
+        AuthController::checkLogged();
+
         $res = ["ok" => true];
         //Only accepting get requests
         if ($_SERVER["REQUEST_METHOD"] != "GET"){
@@ -194,6 +205,8 @@ class AppointmentsController implements AbstractController {
 
     //Gets the unavailable times for a given hospital, medic and date
     public static function getUnavailableTimes() {
+        AuthController::checkLogged();
+
         $res = ["ok" => true];
 
         //Only accepting get requests
@@ -237,6 +250,8 @@ class AppointmentsController implements AbstractController {
 
     //Gets the first free room for a given hospital, date and time
     public static function getFreeRoom() {
+        AuthController::checkLogged();
+
         $res = ["ok" => true];
 
         //Only accepting get requests
@@ -270,6 +285,8 @@ class AppointmentsController implements AbstractController {
     }
 
     public static function get() {
+        AuthController::checkLogged();
+
         $res = ["ok" => true];
         if ($_SERVER["REQUEST_METHOD"] != "GET"){
             $res["error"] = "Invalid request method";
@@ -291,6 +308,8 @@ class AppointmentsController implements AbstractController {
         echo json_encode($res);
     }
     public static function getConstants(){
+        AuthController::checkLogged();
+        
         //Only accepting get requests
         if ($_SERVER["REQUEST_METHOD"] != "GET"){
             http_response_code(400);
