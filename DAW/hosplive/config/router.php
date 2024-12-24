@@ -11,9 +11,11 @@ $routes = [
     "hosplive/appointments/cancel_appointment" => ["AppointmentsController", "remove"],
     "hosplive/appointments/edit_appointment" => ["AppointmentsController", "edit"],
     "hosplive/appointments/getConstants" => ["AppointmentsController", "getConstants"],
-    "hosplive/auth/register" => ["AuthController", "index"],
+    "hosplive/auth/index" => ["AuthController", "index"],
     "hosplive/auth/add_user" => ["AuthController", "add"],
     "hosplive/auth/verify_user" => ["AuthController", "verifyUser"],
+    "hosplive/auth/specialize_user" => ["AuthController", "specializeUser"],
+    "hosplive/auth/resend_verif_code" => ["AuthController", "resendVerifCode"],
     "hosplive/auth/login" => ["AuthController", "login"],
     "hosplive/auth/logout"=> ["AuthController", "logout"]
 ];
