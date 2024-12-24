@@ -24,4 +24,4 @@ INSERT INTO Users(birth_date, gender_id, first_name, last_name, phone_number, us
 						 '$2y$10$tmVMmDCl4lBpigrgW7CuiOTFunt4rphsuSLBHIyXFl0qq/20BfKTK', 'gamer.lucan72@gmail.com',
                           2, 'ALGP5XBOQIUAD73I', '297718');
 
-INSERT INTO migrations(name) VALUES ('add_2FA_neccesary_data');
+INSERT INTO migrations(migration_name) VALUES ('add_2FA_neccesary_data');
