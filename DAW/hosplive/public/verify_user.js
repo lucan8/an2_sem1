@@ -1,25 +1,43 @@
 addEventListener('DOMContentLoaded', (event) => {
-    let verif_code_input = document.getElementById('verif_code');
-    let verify_btn = document.getElementById('verify_btn');
-    let user_email = document.getElementById('verif_user_cont').getAttribute("user_email");
+    let verify_form = document.getElementById("verify_form");
+    let resend_code_btn = document.getElementById("resend_code_btn");
+    
+    let remaining_resends = document.getElementById("remaining_resends");
+    let remaining_tries = document.getElementById("remaining_tries");
 
-    verify_btn.addEventListener('click', (event) =>{
+    verify_form.addEventListener('submit', (event) =>{
+        event.preventDefault();
         //Creating the form object and filling it with the user id and the verification code
-        let data = new FormData();
-        data.append("email", user_email);
-        data.append("verif_code", verif_code_input.value);
+        let data = new FormData(verify_form);
 
         fetch("verify_user",{
             method: "POST",
             body: data
         }).then(response => response.json().then(resp => {
-            //If the response is ok, the user is redirected to the index page
+            //If the response is ok, the user is redirected
             if(resp.ok)
                 window.location.href = resp.redirect;
             else{
                 alert("Error verifying user");
+                remaining_tries.innerText = resp.remaining_tries;
                 console.log(resp.error);
             }
+        }));
+    });
+
+    resend_code_btn.addEventListener('click', (event) =>{
+        fetch("resend_verif_code", {
+            method: "POST"
+        }).then(response => response.json().then(resp => {
+            if(resp.ok)
+                alert("Verification code sent");
+            else{
+                alert(resp.error);
+                //Redirect user to login page if the user has no more resends
+                if (resp.remaining_resends === 0)
+                    window.location.href = "/login";
+            }
+            remaining_resends.innerText = resp.remaining_resends;
         }));
     });
 });
