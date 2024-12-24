@@ -1,21 +1,20 @@
 <?php
-    require_once 'Entity.php';
-    class MedicsData extends EntityData{
-        public int $medic_id;
-        public string $medic_name;
-        public int $specialization_id;
-        public int $years_exp;
+    require_once 'AbstractUser.php';
+    class MedicsData extends AbstractUserData{
+        //Auto increment(auto increment keys are set to 0 by default so that they are ignored when inserting)
+        public int|null $medic_id = 0;
+        public int|null $specialization_id;
+        public int|null $years_exp;
 
-        function __construct(){}
-        public function set(int $medic_id, string $medic_name, int $specialization_id, int $years_exp){
-            $this->medic_id = $medic_id;
-            $this->medic_name = $medic_name;
+        function __construct(int $user_id = null, int $specialization_id = null, int $years_exp = null){
+            parent::__construct($user_id);
+
             $this->specialization_id = $specialization_id;
             $this->years_exp = $years_exp;
         }
     }
 
-    class Medics extends Entity{
+    class Medics extends AbstractUser{
         public static function getMedicsBySpec($spec_id): array{
             $query = "SELECT * FROM " . static::class . " WHERE specialization_id = ?";
             self::printQuery($query, [$spec_id]);
@@ -41,6 +40,9 @@
             $stm->execute([$hosp_id, $spec_id]);
             
             return $stm->fetchAll();
+        }
+        public static function getNeccesaryRows(): array{
+            return ['specialization_id', 'years_exp'];
         }
     }
 ?>

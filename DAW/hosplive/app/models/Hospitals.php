@@ -1,20 +1,22 @@
 <?php
-    require_once 'Entity.php';
 
-    class HospitalsData extends EntityData{
-        public int $hospital_id;
+use function PHPSTORM_META\override;
+
+    require_once 'AbstractUser.php';
+
+    class HospitalsData extends AbstractUserData{
+        //Auto increment keys are set to 0 by default so that they are ignored when inserting
+        //Should be read only but the fetch mode is set to FETCH_CLASS which sets the properties directly
+        public int $hospital_id = 0;
         public int $county_id;
-        public string $phone_number;
 
-        function __construct(){}
-        public function set(int $hospital_id, int $county_id, string $phone_number){
-            $this->hospital_id = $hospital_id;
+        function __construct(int $user_id = 0, int $county_id = 0){
+            parent::__construct($user_id);
             $this->county_id = $county_id;
-            $this->phone_number = $phone_number;
         }
     }
 
-    class Hospitals extends Entity{
+    class Hospitals extends AbstractUser{
         public const OPENING_TIME = "08:00";
         public const CLOSING_TIME = "22:00";
         // Returns hospital from passed county
@@ -47,6 +49,11 @@
                                                                     $row['phone_number']);
 
             return $hospitals;
-        }  
+        }
+        public static function getNeccesaryRows(): array{
+            return ['county_id'];
+        }
     }
+
+
 ?>
