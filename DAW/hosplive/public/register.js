@@ -11,13 +11,12 @@ addEventListener('DOMContentLoaded', function(event) {
             method: "POST",
             body: data
         }).then(response => response.json().then(resp => {
-            //If the response is ok, the user is redirected to the verification page
-            if (resp.ok)
+            //If the response is not ok, alert the error
+            if (!resp.ok)
+                alert(resp.error);
+            //If the response contains a redirect, redirect to the given page
+            if (resp.hasOwnProperty('redirect'))
                 window.location.href = resp.redirect;
-            else{
-                alert("Error adding user");
-                console.log(resp.error);
-            }
         }));
     });
 });
