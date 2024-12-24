@@ -11,7 +11,7 @@
         <header id="layout_header">
             <h1>Welcome to Hosplive</h1>
             <nav id="layout_nav">
-                <a href="index">Home</a>
+                <a href="../index">Home</a>
                 <a href="appointments">Appointments</a>
                 <a href="about_us">About Us</a>
             </nav>

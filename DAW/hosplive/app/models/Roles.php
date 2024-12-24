@@ -21,7 +21,7 @@
             return $stm->fetchAll();
         }
 
-        public static function getById($id): RolesData{
+        public static function getById(int $id): RolesData{
             $query = "SELECT * FROM roles WHERE role_id = ?";
             self::printQuery($query, [$id]);
 
@@ -30,6 +30,5 @@
             
             $stm->execute([$id]);
             return $stm->fetch();
-        
         }
     }
