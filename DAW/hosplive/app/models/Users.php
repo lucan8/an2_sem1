@@ -2,7 +2,8 @@
     //Variables which have default values do so to be ignored when checking for form parameters in the controller
     require_once 'Entity.php';
     class UsersData extends EntityData{
-        //Auto increment primary key
+        //Auto increment keys are set to 0 by default so that they are ignored when inserting
+        //Should be read only but the fetch mode is set to FETCH_CLASS which sets the properties directly
         public int $user_id = 0;
         public string $birth_date;
         public int $gender_id;
@@ -41,7 +42,6 @@
     }
 
     class Users extends Entity{
-        //public function fetch(array $columns, array $where) : EntityData;
         public static function getById(int $id) : UsersData{
             $query = "SELECT * FROM users WHERE user_id = ?";
             self::printQuery($query, [$id]);
@@ -76,6 +76,18 @@
                 throw new AffectedRowsException($affectred_rows, 1);
             return $success;
         }
-        //TO DO: Remove query1 and just return success
+
+        public static function updateVerificationCode($user_id, $verif_code): bool{
+            $query = "UPDATE users SET active_code = ?, active_code_date = NOW() WHERE user_id = ?";
+            self::printQuery($query, [$verif_code, $user_id]);
+
+            $stm = self::$conn->prepare($query);
+            $success = $stm->execute([$verif_code, $user_id]);
+
+            $affectred_rows = $stm->rowCount();
+            if ($affectred_rows != 1)
+                throw new AffectedRowsException($affectred_rows, 1);
+            return $success;
+        }
     }
 ?>
