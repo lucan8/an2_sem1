@@ -19,5 +19,14 @@ abstract class AbstractUser extends Entity{
         $stm->execute([$user_id]);
         return $stm->fetch();
     }
+
+    abstract public static function getIdColumn();
+
+    //Gets the id of the user from the specialized table
+    public static function getSpecializedId(int $user_id){
+        $data = static::getByUser($user_id);
+        $id_column = static::getIdColumn();
+        return $data->$id_column;
+    }
 }
 ?>
