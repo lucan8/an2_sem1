@@ -34,8 +34,6 @@
             <option id="select_medic" selected disabled>Select medic</option>
         </select>
 
-        <!--Better solution here-->
-        <!--https://stackoverflow.com/questions/19655250/is-it-possible-to-disable-input-time-clear-button-->
         <input type="date" id="date_input" disabled required>
 
         <div>
@@ -49,7 +47,7 @@
     <!-- Form with actual data -->
     <form id="appointment_form" hidden>
         <!--Temporary solution-->
-        <input type="number" id="user_id" name="user_id" value="1">
+        <input type="number" id="user_id" name="user_id">
         <input type="number" id="hospital_id" name="hospital_id">
         <input type="number" id="medic_id" name="medic_id">
         <input type="date" id="appointment_date" name="appointment_date">
