@@ -1,15 +1,16 @@
 <?php
-//TODO: Add allowed roles
 $routes = [
     "hosplive/index" => ["Controller", "index"],
+    "hosplive/get_medics" => ["Controller", "getMedics"],
+    "hosplive/get_statuses" => ["Controller", "getStatuses"],
     "hosplive/appointments/make_appointment" => ["AppointmentsController", "add"],
-    "hosplive/appointments/getMedics" => ["AppointmentsController", "getMedics"],
     "hosplive/appointments/getUnavailableTimes" => ["AppointmentsController", "getUnavailableTimes"],
     "hosplive/appointments/getFreeRoom" => ["AppointmentsController", "getFreeRoom"],
     "hosplive/appointments/getAppointments" => ["AppointmentsController", "getAppointments"],
     "hosplive/appointments/appointments" => ["AppointmentsController", "index"],
     "hosplive/appointments/cancel_appointment" => ["AppointmentsController", "remove"],
     "hosplive/appointments/edit_appointment" => ["AppointmentsController", "edit"],
+    "hosplive/appointments/add_appointment_info" => ["AppointmentsController", "addInfo"],
     "hosplive/appointments/getConstants" => ["AppointmentsController", "getConstants"],
     "hosplive/auth/index" => ["AuthController", "index"],
     "hosplive/auth/add_user" => ["AuthController", "add"],
@@ -17,11 +18,14 @@ $routes = [
     "hosplive/auth/specialize_user" => ["AuthController", "specializeUser"],
     "hosplive/auth/resend_verif_code" => ["AuthController", "resendVerifCode"],
     "hosplive/auth/login" => ["AuthController", "login"],
-    "hosplive/auth/logout"=> ["AuthController", "logout"]
+    "hosplive/auth/logout"=> ["AuthController", "logout"],
+    "hosplive/job/index" => ["JobController", "index"],
+    "hosplive/job/apply" => ["JobController", "apply"],
+    "hosplive/job/change_status" => ["JobController", "changeStatus"]
 ];
 
 class Router {
-    private $uri;
+    protected $uri;
 
     public function __construct() {
         // Get the current URI
