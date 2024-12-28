@@ -1,11 +1,11 @@
 <?php
     require_once 'Entity.php';
     class GendersData extends EntityData{
-        public int $gender_id = 0;
-        public string $gender_name;
+        public int|null $gender_id = 0;
+        public string|null $gender_name;
 
-        function __construct(){}
-        public function set(string $gender_name){
+        function __construct(int $gender_id = null, string $gender_name = null){
+            $this->gender_id = $gender_id;
             $this->gender_name = $gender_name;
         }
     }

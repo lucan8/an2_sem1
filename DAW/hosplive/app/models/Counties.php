@@ -1,11 +1,10 @@
 <?php
     require_once 'Entity.php';
     class CountiesData extends EntityData{
-        public int $county_id;
-        public string $county_name;
+        public int|null $county_id = 0; //Autoincrement primary key
+        public string|null $county_name;
 
-        function __construct(){}
-        public function set(int $county_id, string $county_name){
+        function __construct(int $county_id = null, string $county_name = null){
             $this->county_id = $county_id;
             $this->county_name = $county_name;
         }

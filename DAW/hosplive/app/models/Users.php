@@ -4,28 +4,29 @@
     class UsersData extends EntityData{
         //Auto increment keys are set to 0 by default so that they are ignored when inserting
         //Should be read only but the fetch mode is set to FETCH_CLASS which sets the properties directly
-        public int $user_id = 0;
-        public string $birth_date;
-        public int $gender_id;
-        public string $first_name;
-        public string $last_name;
-        public string $phone_number;
-        public string $user_name;
-        public string $password;
-        public string $email;
-        public int $role_id;
+        public int|null $user_id = 0;
+        public string|null $birth_date;
+        public int|null $gender_id;
+        public string|null $first_name;
+        public string|null $last_name;
+        public string|null $phone_number;
+        public string|null $user_name;
+        public string|null $password;
+        public string|null $email;
+        public int|null $role_id;
 
         //Neccessary for email verification
         //Default values are to be ignored when checking for form parameters in the controller
-        public string $secret = "";
-        public string $active_code = "";
-        public string $active_code_date = "";
-        public bool $verified = false;
+        public string|null $secret = "";
+        public string|null $active_code = "";
+        public string|null $active_code_date = ""; //Set to NOW() on a database level
+        public bool|null $verified = false;
 
-        function __construct(){}
-        public function set(string $birth_date, int $gender_id, string $first_name, string $last_name,
-                            string $phone_number, string $user_name, string $password, string $email, int $role_id,
-                            string $secret, string $active_code){
+        function __construct(int $user_id = null, string $birth_date = null, int $gender_id = null, string $first_name = null,
+                             string $last_name = null, string $phone_number = null, string $user_name = null,
+                             string $password = null, string $email = null, int $role_id = null,
+                             string $secret = null, string $active_code = null, string $active_code_date = null){
+            $this->user_id = $user_id;
             $this->birth_date = $birth_date;
             $this->gender_id = $gender_id;
             $this->first_name = $first_name;
@@ -38,6 +39,7 @@
 
             $this->secret = $secret;
             $this->active_code = $active_code;
+            $this->active_code_date = $active_code_date;
         }
     }
 
@@ -47,7 +49,7 @@
             self::printQuery($query, [$id]);
 
             $stm = self::$conn->prepare($query);
-            $stm->setFetchMode(PDO::FETCH_CLASS, "UsersData");
+            $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, static::class . "Data");
             
             $stm->execute([$id]);
             return $stm->fetch();
@@ -58,7 +60,7 @@
             self::printQuery($query, [$email]);
 
             $stm = self::$conn->prepare($query);
-            $stm->setFetchMode(PDO::FETCH_CLASS, "UsersData");
+            $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, static::class . "Data");
             
             $stm->execute([$email]);
             return $stm->fetch();
@@ -89,5 +91,7 @@
                 throw new AffectedRowsException($affectred_rows, 1);
             return $success;
         }
+        
     }
+
 ?>
