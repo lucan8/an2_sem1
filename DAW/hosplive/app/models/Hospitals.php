@@ -1,17 +1,15 @@
 <?php
-
-use function PHPSTORM_META\override;
-
     require_once 'AbstractUser.php';
 
     class HospitalsData extends AbstractUserData{
         //Auto increment keys are set to 0 by default so that they are ignored when inserting
         //Should be read only but the fetch mode is set to FETCH_CLASS which sets the properties directly
-        public int $hospital_id = 0;
-        public int $county_id;
+        public int|null $hospital_id = 0;
+        public int|null $county_id;
 
-        function __construct(int $user_id = 0, int $county_id = 0){
+        function __construct(int $user_id = null, int $hospital_id = null, int $county_id = null){
             parent::__construct($user_id);
+            $this->hospital_id = $hospital_id;
             $this->county_id = $county_id;
         }
     }
@@ -25,7 +23,7 @@ use function PHPSTORM_META\override;
             self :: printQuery($query, [$county_id]);
 
             $stm = self :: $conn->prepare($query);
-            $stm->setFetchMode(PDO::FETCH_CLASS, static::class . "Data");
+            $stm->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, static::class . "Data");
             
             $stm->execute([$county_id]);
 
@@ -34,7 +32,7 @@ use function PHPSTORM_META\override;
 
         //Returns an assoc array of hospitals(county_name: HospitalsData)
         public static function getHospitalsAndCounties(): array{
-            $query = "SELECT h.hospital_id, c.county_name, h.phone_number, h.county_id
+            $query = "SELECT h.user_id, h.hospital_id, c.county_name, h.county_id
                       FROM hospitals h JOIN counties c ON h.county_id = c.county_id";
             self :: printQuery($query);
 
@@ -44,14 +42,18 @@ use function PHPSTORM_META\override;
             //Creating an assoc array of hospitals
             $hospitals = [];
             foreach($stm->fetchAll() as $row)
-                $hospitals[$row['county_name']] = new HospitalsData($row['hospital_id'],
-                                                                    $row['county_id'],
-                                                                    $row['phone_number']);
+                $hospitals[$row['county_name']] = new HospitalsData($row["user_id"], $row['hospital_id'],
+                                                                    $row['county_id']);
 
             return $hospitals;
         }
+
         public static function getNeccesaryRows(): array{
             return ['county_id'];
+        }
+
+        public static function getIdColumn(){
+            return 'hospital_id';
         }
     }
 
