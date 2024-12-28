@@ -3,6 +3,7 @@ addEventListener("DOMContentLoaded", () => {
     let spec_sugg = document.getElementById("spec_list");
     let spec_input = document.getElementById("spec_input");
     let years_exp_input = document.getElementById("years_exp");
+    let medic_cv = document.getElementById("medic_cv");
 
     medic_form.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -10,6 +11,7 @@ addEventListener("DOMContentLoaded", () => {
         let data = new FormData();
         data.append("specialization_id", document.getElementById(spec_input.value).getAttribute("spec_id"));
         data.append("years_exp", years_exp_input.value);
+        data.append("medic_cv", medic_cv.files[0]);
         
         fetch("specialize_user", {
             method: "POST",
@@ -23,7 +25,7 @@ addEventListener("DOMContentLoaded", () => {
             }
         })
     });
-    spec_input.addEventListener("input", function(event){
+    spec_input.addEventListener("input", (event) => {
         let input_spec = event.target.value;
         //Searching for input_spec in the options
         let associated_opt = Array.from(spec_sugg.children).find((option) => {return option.textContent.toLowerCase() == input_spec.toLowerCase()});
@@ -32,7 +34,8 @@ addEventListener("DOMContentLoaded", () => {
         else
             makeSuggestions(spec_sugg, event.target);
     });
-    //Create divs for each option that starts with the input value
+
+    //Enable all options from sugg_list that start with input_elem's value  
     function makeSuggestions(sugg_list, input_elem){
         let input_data = input_elem.value;
         if (input_data == "") return;

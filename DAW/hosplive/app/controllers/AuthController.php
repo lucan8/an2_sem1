@@ -1,6 +1,7 @@
 <?php
     require_once "app/controllers/AbstractController.php";
     require_once "app/models/Users.php";
+    require_once "app/services/DocumentService.php";
     require_once 'deps/GoogleAuthenticator-master/PHPGangsta/GoogleAuthenticator.php';
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
@@ -98,13 +99,13 @@
                 //Generating secret and verification code
                 $secret = self::$ga->createSecret();
                 $code = self::$ga->getCode($secret, time() / self::VERIF_CODE_DURATION);
+                $hashed_password = password_hash($_POST["password"], PASSWORD_DEFAULT);
 
                 //Populate the user object
-                $user = new UsersData();
-                $user->set($_POST["birth_date"], $_POST["gender_id"], $_POST["first_name"],
-                            $_POST["last_name"], $_POST["phone_number"], $_POST["user_name"],
-                            password_hash($_POST["password"], PASSWORD_DEFAULT), $_POST["email"], $_POST["role_id"],
-                            $secret, $code);
+                $user = new UsersData(null, $_POST["birth_date"], $_POST["gender_id"], $_POST["first_name"],
+                                      $_POST["last_name"], $_POST["phone_number"], $_POST["user_name"],
+                                      $hashed_password, $_POST["email"], $_POST["role_id"],
+                                      $secret, $code);
                 //Insert user in database in unverified state
                 try{
                     Users :: insert($user);
@@ -226,16 +227,17 @@
         self::checkLoggedAuth();
 
         //This does not occur normally as the user is redirected to this page from the verify page
-        if (!isset($_SESSION["role_id"]) || $_SESSION["user_id"] == ""){
+        if (!isset($_SESSION["user_role"]) || $_SESSION["user_id"] == ""){
             header("Location: /hosplive/auth/add_user");
             exit();
         }
 
         //Render view based on role
         require_once "app/models/Roles.php";
-        $role = Roles :: getById($_SESSION["role_id"])->role_name;
         if ($_SERVER["REQUEST_METHOD"] == "GET"){
-            self::getChosenView($role);
+            $view_info = Roles :: getChosenView($_SESSION["user_role"]);
+            $data = $view_info["data"];
+            require_once $view_info["route"];
         }
         else if ($_SERVER["REQUEST_METHOD"] == "POST"){
             require_once "app/models/Hospitals.php";
@@ -245,7 +247,7 @@
             $res = ["ok" => true];
 
             //Getting the chosen model
-            $chosen_model = self::getChosenModel($role);
+            $chosen_model = Roles :: getChosenModel($_SESSION["user_role"]);
             
             //Getting the neccesary rows for the chosen model
             $neccesary_rows = $chosen_model :: getNeccesaryRows();
@@ -262,9 +264,9 @@
                 echo json_encode($res);
                 return;
             }
-
             //Creating the spcialized user object and populating it
             $spec_user = new ($chosen_model . 'Data')($_SESSION["user_id"]);
+            
             foreach($neccesary_rows as $row)
                 $spec_user->$row = $_POST[$row];
 
@@ -276,6 +278,18 @@
                 $res["ok"] = false;
                 echo json_encode($res);
                 return;
+            }
+
+            //TODO: Move this in a medics handler or something
+            //Medics also need to upload their CV
+            if ($_SESSION["user_role"] == "medic"){
+                $err = DocumentService :: storeMedicCV("medic_cv", $_SESSION["user_id"]);
+                if ($err){
+                    $res["error"] = $err;
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
             }
 
             //Setting the session to logged
@@ -382,41 +396,6 @@
 
         header("Location: /hosplive/auth/login");
         exit();
-    }
-
-    //Returns the the model name based on the role name
-    private static function getChosenModel(string $role_name): string{
-        switch ($role_name){
-            case "hospital":
-                require_once "app/models/Hospitals.php";
-                return Hospitals :: class;
-            case "pacient":
-                require_once "app/models/Pacients.php";
-                return Pacients :: class;
-            case "medic":
-                require_once "app/models/Medics.php";
-                return Medics :: class;
-            default:
-                return "";
-        }
-    }
-
-    //Renders the view with it's data
-    private static function getChosenView(string $role_name){
-        switch ($role_name){
-            case "hospital":
-                require_once "app/models/Counties.php";
-                $counties = Counties :: getAll();
-                require_once "app/views/auth/add_hospital.php";
-            case "pacient":
-                return "app/views/add_pacient.php";
-            case "medic":
-                require_once "app/models/Specializations.php";
-                $specializations = Specializations :: getAll();
-                require_once "app/views/auth/add_medic.php";
-            default:
-                return "";
-        }
     }
     
     //Validates email and returns error message if invalid, null otherwise
@@ -563,7 +542,7 @@
         require_once "app/models/Roles.php";
         //Looking if the user has an entry in one of the specialized tables
         $user_role = (Roles :: getById($user->role_id))->role_name;
-        $chosen_model = self::getChosenModel($user_role);
+        $chosen_model = Roles :: getChosenModel($user_role);
         $spec_user = $chosen_model :: getByUser($user->user_id);
 
         return $spec_user != false;
@@ -589,7 +568,9 @@
 
     //Checks if the user is logged in and redirects them to the login page if not
     public static function checkLogged(){
-        session_start();
+        //Starting session if not already started
+        if (session_status() === PHP_SESSION_NONE)
+            session_start();
         $logged = isset($_SESSION["logged"]) && $_SESSION["logged"];
         $redirect = "/hosplive/auth/login";
 
@@ -614,16 +595,20 @@
     }
 
     private static function createSession(UsersData $user, SessionCreatedFrom $from){
-         //Setting up the session
-         session_regenerate_id(true);
-         $_SESSION["user_id"] = $user->user_id;
-         $_SESSION["role_id"] = $user->role_id;
-         $_SESSION["mail"] = $user->email; //Needed for sending verification code
-         $_SESSION["abs_exp_time"] = time() + self::SESSION_ABSOLUTE_LIFE; 
-         $_SESSION["verif_code_sends"] = 0;
-         $_SESSION["verif_code_tries"] = 0;
-         $_SESSION["from"] = $from; //Used for verifyUser as diff functions are called based on this
-         $_SESSION["logged"] = false;
+        require_once "app/models/Roles.php";
+        //Setting up the session
+        session_regenerate_id(true);
+        $_SESSION["user_id"] = $user->user_id;
+        $_SESSION["user_role"] = Roles :: getById($user->role_id)->role_name;
+        //Still thinking about adding these
+        //$_SESSION["specialized_id"] = Roles :: getChosenModel($_SESSION["user_role"]) :: getSpecializedId($user->user_id);
+        //$_SESSION["specialized_id_col] = Roles :: getChosenModel($_SESSION["user_role"]) :: getIdColumn();
+        $_SESSION["mail"] = $user->email; //Needed for sending verification code
+        $_SESSION["abs_exp_time"] = time() + self::SESSION_ABSOLUTE_LIFE; 
+        $_SESSION["verif_code_sends"] = 0;
+        $_SESSION["verif_code_tries"] = 0;
+        $_SESSION["from"] = $from; //Used for verifyUser as diff functions are called based on this
+        $_SESSION["logged"] = false;
     }
 
     public static function setAuth(){
@@ -664,6 +649,7 @@
                 return "User is already registered";
         }
     }
+
     //TO DO
     public static function remove(){}
 
