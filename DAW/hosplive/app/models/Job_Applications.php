@@ -53,6 +53,19 @@
             return $stm->fetchAll();
         }
 
+        //Get the application that has the given applicant and hirer
+        public static function getByApplicantAndHirer(int $applicant_user_id, int $hirer_user_id): Job_ApplicationsData|false{
+            $query = "SELECT * FROM job_applications WHERE applicant_user_id = ? AND hirer_user_id = ?";
+            self::printQuery($query, [$applicant_user_id, $hirer_user_id]);
+            
+            $stm = self::$conn->prepare($query);
+            $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, self::class . "Data");
+            $stm->execute([$applicant_user_id, $hirer_user_id]);
+
+            return $stm->fetch();
+        }
+        
+        //Update the status of the application to the new status
         public static function updateStatus(int $application_id, int $new_status_id){
             $query = "UPDATE job_applications SET application_status_id = ? WHERE job_application_id = ?";
             self::printQuery($query, [$new_status_id, $application_id]);
