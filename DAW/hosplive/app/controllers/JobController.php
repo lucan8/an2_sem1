@@ -113,7 +113,7 @@
         public static function getMedicCV(){
             AuthController::checkLogged();
             //Only medics and hospitals can view the CV
-            if (in_array($_SESSION["user_role"], ["medic", "hospital"]) == false){
+            if (in_array($_SESSION["user_role"], ["hospital"]) == false){
                 http_response_code(403);
                 return;
             }
@@ -138,6 +138,14 @@
                 return;
             }
 
+            require_once "app/models/Job_Applications.php";
+
+            //Check if the applicant is actually applying to the hirer
+            $job_app = Job_Applications::getByApplicantAndHirer($_GET["applicant_user_id"], $_SESSION["user_id"]);
+            if (!$job_app){
+                http_response_code(403);
+                return;
+            }
             //Try to display the medic's CV
             $err = DocumentService::displayMedicCV($_GET["applicant_user_id"]);
             if ($err)
