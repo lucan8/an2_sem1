@@ -21,7 +21,8 @@ $routes = [
     "hosplive/auth/logout"=> ["AuthController", "logout"],
     "hosplive/job/index" => ["JobController", "index"],
     "hosplive/job/apply" => ["JobController", "apply"],
-    "hosplive/job/change_status" => ["JobController", "changeStatus"]
+    "hosplive/job/change_status" => ["JobController", "changeStatus"],
+    "hosplive/job/get_medic_cv" => ["JobController", "getMedicCV"]
 ];
 
 class Router {
