@@ -18,6 +18,49 @@
                 http_response_code(403);
         }
 
+        public static function apply(){
+            AuthController::checkLogged();
+            if ($_SESSION["user_role"] != "medic"){
+                http_response_code(403);
+                return;
+            }
+
+            if ($_SERVER["REQUEST_METHOD"] == "GET"){
+                require_once "app/views/layout.php";
+                require_once "app/models/Hospitals.php";
+                $hospitals = Hospitals::getHospitalsAndCounties();
+                require_once "app/views/job/apply.php";
+            }
+            else if ($_SERVER["REQUEST_METHOD"] == "POST"){
+                //Getting the unset parameters
+                $res = ["ok" => true];
+                $unset_params = array_filter(["hosp_user_id"], function($param){
+                    return !isset($_POST[$param]) || $_POST[$param] == ""; 
+                });
+
+                //If there are unset parameters, return an error with the unset parameters
+                if (count($unset_params) != 0){
+                    $res["error"] = "Unset parameters: " . implode($unset_params);
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
+                require_once "app/models/Job_Application.php";
+                require_once "app/models/Application_Statuses.php";
+                require_once "app/models/Hospitals.php";
+                //Inserting the job application as pending
+                try{
+                    $app_status_id = Application_Statuses::getByName("Pending")->application_status_id;
+                    Job_Applications::insert(new Job_ApplicationsData(null, $_SESSION["user_id"], $_POST["hosp_user_id"],
+                                                                      null, $app_status_id));
+                } catch (Exception $e){
+                    $res["error"] = $e->getMessage();
+                    $res["ok"] = false;
+                }
+                echo json_encode($res);
+            }
+        }
+
         public static function changeStatus(){
             AuthController::checkLogged();
             if ($_SESSION["user_role"] != "hospital"){
@@ -67,47 +110,39 @@
             echo json_encode($res);
         }
 
-        public static function apply(){
+        public static function getMedicCV(){
             AuthController::checkLogged();
-            if ($_SESSION["user_role"] != "medic"){
+            //Only medics and hospitals can view the CV
+            if (in_array($_SESSION["user_role"], ["medic", "hospital"]) == false){
                 http_response_code(403);
                 return;
             }
-
-            if ($_SERVER["REQUEST_METHOD"] == "GET"){
-                require_once "app/views/layout.php";
-                require_once "app/models/Hospitals.php";
-                $hospitals = Hospitals::getHospitalsAndCounties();
-                require_once "app/views/job/apply.php";
+            //Only POST requests are allowed
+            if ($_SERVER["REQUEST_METHOD"] != "GET"){
+                http_response_code(405);
+                return;
             }
-            else if ($_SERVER["REQUEST_METHOD"] == "POST"){
-                //Getting the unset parameters
-                $res = ["ok" => true];
-                $unset_params = array_filter(["hosp_user_id"], function($param){
-                    return !isset($_POST[$param]) || $_POST[$param] == ""; 
-                });
 
-                //If there are unset parameters, return an error with the unset parameters
-                if (count($unset_params) != 0){
-                    $res["error"] = "Unset parameters: " . implode($unset_params);
-                    $res["ok"] = false;
-                    echo json_encode($res);
-                    return;
-                }
-                require_once "app/models/Job_Application.php";
-                require_once "app/models/Application_Statuses.php";
-                require_once "app/models/Hospitals.php";
-                //Inserting the job application as pending
-                try{
-                    $app_status_id = Application_Statuses::getByName("Pending")->application_status_id;
-                    Job_Applications::insert(new Job_ApplicationsData(null, $_SESSION["user_id"], $_POST["hosp_user_id"],
-                                                                      null, $app_status_id));
-                } catch (Exception $e){
-                    $res["error"] = $e->getMessage();
-                    $res["ok"] = false;
-                }
+            $res = ["ok" => true];
+
+            //Getting the unset parameters
+            $unset_params = array_filter(["applicant_user_id"], function($param){
+                return !isset($_GET[$param]) || $_GET[$param] == ""; 
+            });
+
+            //If there are unset parameters, return an error with the unset parameters
+            if (count($unset_params) != 0){
+                $res["error"] = "Unset parameters: " . implode($unset_params);
+                $res["ok"] = false;
                 echo json_encode($res);
+                return;
             }
+
+            //Try to display the medic's CV
+            $err = DocumentService::displayMedicCV($_GET["applicant_user_id"]);
+            if ($err)
+                http_response_code(404);
         }
+
     }
 ?>
