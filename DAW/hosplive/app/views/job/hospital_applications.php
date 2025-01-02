@@ -16,6 +16,7 @@
                 echo "<div>Specializaiton: " . $application["specialization"] . "</div>";
                 echo "<div>Application Date: " . $application["date"] . "</div>";
                 echo "<div>Status: <select class='app_status' id='status_" . $application["id"] . "'> <option selected status_id='" . $application["status_id"] . "' value='" . $application["status"]  . "'>" . $application["status"] . "</option></select></div>";
+                echo "<button class='view_cv'>View CV</button>"; 
                 echo "<button class='save_changes'>Save Changes</button>";
                 echo "</div>";
             }
