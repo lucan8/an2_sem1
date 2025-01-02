@@ -87,6 +87,37 @@ addEventListener("DOMContentLoaded", (event) => {
         });
     }
 
+    Array.from(document.getElementsByClassName("view_cv")).forEach((btn) => 
+        btn.addEventListener("click", async (event) => {
+            let applicant_user_id = event.target.parentNode.getAttribute("applicant_user_id");
+            let cv_url = await getMedicCVURL(applicant_user_id);
+            let child_window = window.open("/public/cv.html");
+
+            //Sending the cv temp url to the child window 
+            child_window.addEventListener("load", (event) => {
+                child_window.postMessage({"cv_url":cv_url});
+                console.log("Temp URL sent!");
+            });
+
+            //Freeing resources if the child window is closed
+            window.addEventListener("message", (event) => {
+                console.log(event.data);
+                if (event.data == "childWindowClosed"){
+                    URL.revokeObjectURL(cv_url);
+                    console.log("Freed temporary URL");
+                }
+                console.log("CHILD DEAD?");
+            });
+        })
+    );
+
+    async function getMedicCVURL(applicant_user_id){
+        return fetch("get_medic_cv?applicant_user_id=" + applicant_user_id).
+            then(async response => {return response.blob().then((resp) => {
+                return URL.createObjectURL(resp);
+        })});
+    }
+
     //Creates and adds option to that container
     function addStatusOption(stat_cont, stat_name, stat_id){
         let opt = utils.addOption(stat_cont, stat_name, stat_name);
