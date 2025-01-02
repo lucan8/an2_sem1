@@ -86,8 +86,9 @@ addEventListener("DOMContentLoaded", (event) => {
                 addStatusOption(stat_cont, status.application_status_name, status.application_status_id);
         });
     }
-
-    Array.from(document.getElementsByClassName("view_cv")).forEach((btn) => 
+    Array.from(document.getElementsByClassName("view_cv")).forEach((btn) =>
+        //TO DO: Differenciate between a reload and an actual tab close
+        //Instead of freeing resources before unload
         btn.addEventListener("click", async (event) => {
             let applicant_user_id = event.target.parentNode.getAttribute("applicant_user_id");
             let cv_url = await getMedicCVURL(applicant_user_id);
@@ -95,7 +96,7 @@ addEventListener("DOMContentLoaded", (event) => {
 
             //Sending the cv temp url to the child window 
             child_window.addEventListener("load", (event) => {
-                child_window.postMessage({"cv_url":cv_url});
+                event.target.postMessage({"cv_url":cv_url});
                 console.log("Temp URL sent!");
             });
 
