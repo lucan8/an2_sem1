@@ -18,6 +18,15 @@
             return $err;
         }
 
+        public static function displayMedicCV(int $medic_user_id): string|null{
+            $file_path = "documents/medics/$medic_user_id/CV.pdf";
+            if (!file_exists($file_path))
+                return "File not found";
+            header("Content-Type: application/pdf");
+            header("Content-Disposition: inline; filename=CV.pdf");
+            readfile($file_path);
+        }
+
         public static function storeHiringContract(string $file_key, int $hirer_user_id, int $applicant_user_id): string|null{
             //File validation
             $accepted_formats = ["application/pdf"];
