@@ -5,7 +5,7 @@ addEventListener("DOMContentLoaded", (event) => {
     Array.from(document.getElementsByClassName("save_changes")).forEach((btn) => {
         btn.addEventListener("click", (event) => {
             let application_id = event.target.parentNode.id;
-            let applicant_user_id = event.target.parentNode.getAttribute('applicant_user_id');
+            let applicant_id = event.target.parentNode.getAttribute('applicant_id');
 
             let status = document.getElementById("status_" + application_id);
             let sel_status = status.children[status.selectedIndex];
@@ -14,7 +14,7 @@ addEventListener("DOMContentLoaded", (event) => {
 
             let data = new FormData();
             data.append("application_id", application_id);
-            data.append("applicant_user_id", applicant_user_id)
+            data.append("applicant_id", applicant_id)
             data.append("new_status_id", sel_status.getAttribute("status_id"))
             data.append("new_status_name", sel_status.value);
             //Adding the contract file to the form data if it actually exists
@@ -90,13 +90,16 @@ addEventListener("DOMContentLoaded", (event) => {
         //TO DO: Differenciate between a reload and an actual tab close
         //Instead of freeing resources before unload
         btn.addEventListener("click", async (event) => {
-            let applicant_user_id = event.target.parentNode.getAttribute("applicant_user_id");
-            let cv_url = await getMedicCVURL(applicant_user_id);
+            let applicant_id = event.target.parentNode.getAttribute("applicant_id");
+            let cv_url = await getMedicCVURL(applicant_id);
+            if (!cv_url)
+                return;
+            
             let child_window = window.open("/public/cv.html");
 
             //Sending the cv temp url to the child window 
             child_window.addEventListener("load", (event) => {
-                event.target.postMessage({"cv_url":cv_url});
+                child_window.postMessage({"cv_url":cv_url});
                 console.log("Temp URL sent!");
             });
 
@@ -112,9 +115,17 @@ addEventListener("DOMContentLoaded", (event) => {
         })
     );
 
-    async function getMedicCVURL(applicant_user_id){
-        return fetch("get_medic_cv?applicant_user_id=" + applicant_user_id).
-            then(async response => {return response.blob().then((resp) => {
+    //Tries to get the medic's CV, if it fails it displays error, otherwise returns temporary URL for it
+    async function getMedicCVURL(applicant_id){
+        return fetch("get_medic_cv?applicant_id=" + applicant_id).
+            then(async response => {
+                //Checking if the the fetch was successfull
+                if (!response.ok){
+                    alert("Error getting the medic's CV: " + response.statusText);
+                    return;
+                }
+                //Creating the url for the file
+                return response.blob().then((resp) => {
                 return URL.createObjectURL(resp);
         })});
     }
