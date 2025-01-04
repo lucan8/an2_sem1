@@ -2,7 +2,10 @@
     require_once "app/controllers/AbstractController.php";
     require_once "app/models/Users.php";
     require_once "app/services/DocumentService.php";
+    require_once "app/services/RecaptchaService.php";
+    require_once "config/config.php";
     require_once 'deps/GoogleAuthenticator-master/PHPGangsta/GoogleAuthenticator.php';
+    use const Config\config_email;
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
 
@@ -44,7 +47,6 @@
         public static function add(){
             //Redirecting user to the index page if they are logged in
             self::checkLoggedAuth();
-            $res = ["ok" => true];
 
             if ($_SERVER["REQUEST_METHOD"] == "GET") {
                  //Loading neccesary data
@@ -57,8 +59,13 @@
                 require_once "app/views/auth/register.php";
             }
             else if ($_SERVER["REQUEST_METHOD"] == "POST"){
+                $res = ["ok" => true];
+                //Get neccesay parameters for the registration form
+                $neccesary_params = get_class_vars('UsersData');
+                $neccesary_params["recaptcha_input"] = null;
+
                 //Getting the unset parameters
-                $unset_parameters = array_filter(get_class_vars('UsersData'), function($def_val, $col){
+                $unset_parameters = array_filter($neccesary_params, function($def_val, $col){
                     $v1 = ($def_val === null);
                     $v2 = !isset($_POST[$col]) || $_POST[$col] == "";
                 return $v1 && $v2;
@@ -67,6 +74,15 @@
                 //If there are unset parameters, return an error with the unset parameters
                 if (count($unset_parameters) != 0){
                     $res["error"] = "Unset parameters: " . implode(", ", array_keys($unset_parameters));
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
+
+                //Checking for bots
+                $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "register");
+                if ($grec_err){
+                    $res["error"] = $grec_err;
                     $res["ok"] = false;
                     echo json_encode($res);
                     return;
@@ -140,7 +156,7 @@
             else{
                 $res = ["ok" => true];
                 //Getting the unset parameters
-                $unset_parameters = array_filter(["email", "password"], function($param){
+                $unset_parameters = array_filter(["email", "password", "recaptcha_input"], function($param){
                     return !isset($_POST[$param]) || $_POST[$param] == "";
                 });
     
@@ -151,6 +167,15 @@
                     echo json_encode($res);
                     return;
                 }
+                //Checking for bots
+                $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "login");
+                if ($grec_err){
+                    $res["error"] = $grec_err;
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
+
                 //Getting the user status
                 $user = Users :: getByEmail($_POST["email"]);
                 $user_status = self::getUserRegStatus($user);
@@ -241,7 +266,7 @@
         }
         else if ($_SERVER["REQUEST_METHOD"] == "POST"){
             require_once "app/models/Hospitals.php";
-            require_once "app/models/Pacients.php";
+            require_once "app/models/Patients.php";
             require_once "app/models/Medics.php";
 
             $res = ["ok" => true];
@@ -251,9 +276,11 @@
             
             //Getting the neccesary rows for the chosen model
             $neccesary_rows = $chosen_model :: getNeccesaryRows();
+            //Adding the recaptcha_input to the neccesary parameters
+            $neccesary_params = array_merge($neccesary_rows, array("recaptcha_input"));
 
             //Getting the unset parameters
-            $unset_parameters = array_filter($neccesary_rows, function($param){
+            $unset_parameters = array_filter($neccesary_params, function($param){
                 return !isset($_POST[$param]) || $_POST[$param] == "";
             });
 
@@ -264,8 +291,17 @@
                 echo json_encode($res);
                 return;
             }
+
+            //Checking for bots
+            $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "specialize");
+            if ($grec_err){
+                $res["error"] = $grec_err;
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
             //Creating the spcialized user object and populating it
-            $spec_user = new ($chosen_model . 'Data')($_SESSION["user_id"]);
+            $spec_user = new ($chosen_model . 'Data')();
             
             foreach($neccesary_rows as $row)
                 $spec_user->$row = $_POST[$row];
@@ -499,7 +535,6 @@
         require_once 'deps/PHPMailer-master/src/PHPMailer.php';
         require_once 'deps/PHPMailer-master/src/Exception.php';
         require_once 'deps/PHPMailer-master/src/SMTP.php';
-        require  'config/config.php';
         require_once 'app/models/Users.php';
         
         $mail = new PHPMailer(true);
@@ -507,15 +542,15 @@
         //$mail->SMTPDebug = 2;
         // Server settings
         $mail->isSMTP();                                      
-        $mail->Host       = $config_email["smtp"];              
+        $mail->Host       = config_email["smtp"];              
         $mail->SMTPAuth   = true;                                 
-        $mail->Username   = $config_email["username"];               
-        $mail->Password   = $config_email["password"];               
+        $mail->Username   = config_email["username"];               
+        $mail->Password   = config_email["password"];               
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;       
-        $mail->Port       = $config_email["port"];                              
+        $mail->Port       = config_email["port"];                              
         
         //Setting the data about the transmitter and the receptor
-        $mail->setFrom($config_email["sender"], $config_email["name"]);      
+        $mail->setFrom(config_email["sender"], config_email["name"]);      
         $mail->addAddress($email); 
     
         // Content
@@ -543,7 +578,7 @@
         //Looking if the user has an entry in one of the specialized tables
         $user_role = (Roles :: getById($user->role_id))->role_name;
         $chosen_model = Roles :: getChosenModel($user_role);
-        $spec_user = $chosen_model :: getByUser($user->user_id);
+        $spec_user = $chosen_model :: getById($user->user_id);
 
         return $spec_user != false;
     }
@@ -600,9 +635,6 @@
         session_regenerate_id(true);
         $_SESSION["user_id"] = $user->user_id;
         $_SESSION["user_role"] = Roles :: getById($user->role_id)->role_name;
-        //Still thinking about adding these
-        //$_SESSION["specialized_id"] = Roles :: getChosenModel($_SESSION["user_role"]) :: getSpecializedId($user->user_id);
-        //$_SESSION["specialized_id_col] = Roles :: getChosenModel($_SESSION["user_role"]) :: getIdColumn();
         $_SESSION["mail"] = $user->email; //Needed for sending verification code
         $_SESSION["abs_exp_time"] = time() + self::SESSION_ABSOLUTE_LIFE; 
         $_SESSION["verif_code_sends"] = 0;
@@ -649,7 +681,6 @@
                 return "User is already registered";
         }
     }
-
     //TO DO
     public static function remove(){}
 
