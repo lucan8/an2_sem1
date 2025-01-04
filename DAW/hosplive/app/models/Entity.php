@@ -61,7 +61,6 @@ abstract class Entity{
         $query = "INSERT INTO " . static::class . "(" .
                   implode(", ", array_keys($data_array)) .
                   ") VALUES(" . $placeholders. ")";
-        
 
         //Print substituted query for debug
         self :: printQuery($query, $inserted_values);
@@ -76,15 +75,35 @@ abstract class Entity{
         return $success;
     }
 
+    abstract public static function getIdColumn(): string;
+
+    //Should be called only by classes that have an id column
+    //Returns object of the representive data class
+    public static function getById(int $id){
+        $query = "SELECT * FROM " . static::class . " WHERE " . static::getIdColumn() . " = ?";
+        self::printQuery($query, [$id]);
+
+        $stm = self::$conn->prepare($query);
+        $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, static::class . "Data");
+        
+        $stm->execute([$id]);
+        return $stm->fetch();
+    }
+
     public static function getAll(): array{
         $query = "SELECT * FROM " . static::class;
         self::printQuery($query);
 
         $stm = self::$conn->prepare($query);
-        $stm->setFetchMode(PDO::FETCH_CLASS, static::class . "Data");
+        $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, static::class . "Data");
         
         $stm->execute();
         return $stm->fetchAll();
     }
+
+    //Gets the rows that should be used in the form used for inserting into the model
+    //abstract public static function getNeccesaryRows(): array; 
+    //Gets the rows which have default values in the model
+    //abstract public static function getDefaultRows(): array;
 }
 ?>
