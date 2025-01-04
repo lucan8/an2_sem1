@@ -2,7 +2,34 @@
     require_once "config/config.php";
     use const Config\config_recaptcha;
     
-    class RecaptchaService{
+    class SecurityService{
+        //Checks if the CSRF token is valid
+        public static function checkCSRFToken(string $token): bool{
+            if (!isset($_SESSION["csrf_tokens"]))
+                return false;
+
+            $filtered_csrf = array_filter($_SESSION["csrf_tokens"], function($t) use ($token){
+                return hash_equals($t, $token);
+            });
+
+            return count($filtered_csrf) > 0;
+        }
+
+        //Generates a CSRF token and adds it to the list of valid tokens stored in the session
+        //Returns the generated token
+        public static function generateCSRFToken():string{
+            $token = bin2hex(random_bytes(32));
+
+            //Setting the first token
+            if (!isset($_SESSION["csrf_tokens"]))
+                $_SESSION["csrf_tokens"] = [$token];
+            else if (count($_SESSION["csrf_tokens"]) > 20) //Keep the last 20 tokens
+                array_shift($_SESSION["csrf_tokens"]);
+
+            $_SESSION["csrf_tokens"][] = $token;
+            return $token;
+        }
+
         //Returns the response from Google's reCaptcha API
         private static function getRecapthcaResp(string $recaptcha_response): array{
             $secretKey = config_recaptcha["back_key"];
