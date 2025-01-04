@@ -22,5 +22,10 @@
 
             return $stm->fetchAll();
         }
+
+        //Should actually return the composite primary key
+        public static function getIdColumn(): string{
+            return 'room_id';
+        }
     }
 ?>

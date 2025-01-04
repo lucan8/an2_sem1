@@ -11,5 +11,8 @@
     }
 
     class Genders extends Entity{
+        public static function getIdColumn(): string{
+            return 'gender_id';
+        }
     }
 ?>

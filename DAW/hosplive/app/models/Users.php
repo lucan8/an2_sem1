@@ -44,17 +44,6 @@
     }
 
     class Users extends Entity{
-        public static function getById(int $id) : UsersData{
-            $query = "SELECT * FROM users WHERE user_id = ?";
-            self::printQuery($query, [$id]);
-
-            $stm = self::$conn->prepare($query);
-            $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, static::class . "Data");
-            
-            $stm->execute([$id]);
-            return $stm->fetch();
-        }
-
         public static function getByEmail(string $email) : UsersData|false{
             $query = "SELECT * FROM users WHERE email = ?";
             self::printQuery($query, [$email]);
@@ -90,6 +79,10 @@
             if ($affectred_rows != 1)
                 throw new AffectedRowsException($affectred_rows, 1);
             return $success;
+        }
+
+        public static function getIdColumn(): string{
+            return 'user_id';
         }
         
     }

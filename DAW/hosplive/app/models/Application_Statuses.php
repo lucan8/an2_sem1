@@ -22,15 +22,8 @@
             return $stm->fetch();
         }
 
-        public static function getById(int $application_status_id): Application_StatusesData|false{
-            $query = "SELECT * FROM " . static::class . " WHERE application_status_id = ?";
-            self::printQuery($query, [$application_status_id]);
-
-            $stm = self::$conn->prepare($query);
-            $stm->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, static::class . "Data");
-
-            $stm->execute([$application_status_id]);
-            return $stm->fetch();
+        public static function getIdColumn(): string{
+            return 'application_status_id';
         }
     }
 ?>
