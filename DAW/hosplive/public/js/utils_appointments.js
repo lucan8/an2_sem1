@@ -66,7 +66,8 @@ export function enableFreeTimeIntervals(unavailable_times, time_options){
 //Adds all possible appointments times between the min and max time of the time input with specified step
 export function fillTimeOptions(date, time_options, op_time, cl_time, app_step){
     //If there are already options, don't add more
-    if (time_options.childElementCount > 1) return false;
+    if (time_options.childElementCount > 1)
+        return false;
     
     //Getting the opening and closing time of the hospital
     let start = new Date(date + " " + op_time);
@@ -94,7 +95,8 @@ export function addOption(option_cont, option_value, option_text){
 
 //Remove all options from options_div except the first one
 export function removeOptions(options_container){
-    if (!options_container) return;
+    if (!options_container) 
+        return;
     while(options_container.childElementCount > 1){
         options_container.removeChild(options_container.lastChild);
     }
