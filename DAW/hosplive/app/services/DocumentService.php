@@ -12,7 +12,7 @@
                 return $err;
             
             //Move file to the appropriate directory
-            $file_name = "CV" . self::getFileExtension($_FILES[$file_key]["name"]);
+            $file_name = "CV." . self::getFileExtension($_FILES[$file_key]["name"]);
             $dest_dir = "documents/medics/$medic_user_id/";
             $err = self::storeFile($file_key, $dest_dir, $file_name);
             return $err;
