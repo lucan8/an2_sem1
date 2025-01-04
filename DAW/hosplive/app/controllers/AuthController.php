@@ -2,7 +2,7 @@
     require_once "app/controllers/AbstractController.php";
     require_once "app/models/Users.php";
     require_once "app/services/DocumentService.php";
-    require_once "app/services/RecaptchaService.php";
+    require_once "app/services/SecurityService.php";
     require_once "config/config.php";
     require_once 'deps/GoogleAuthenticator-master/PHPGangsta/GoogleAuthenticator.php';
     use const Config\config_email;
@@ -80,7 +80,7 @@
                 }
 
                 //Checking for bots
-                $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "register");
+                $grec_err = SecurityService::validateRecaptchaResp($_POST["recaptcha_input"], "register");
                 if ($grec_err){
                     $res["error"] = $grec_err;
                     $res["ok"] = false;
@@ -168,7 +168,7 @@
                     return;
                 }
                 //Checking for bots
-                $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "login");
+                $grec_err = SecurityService::validateRecaptchaResp($_POST["recaptcha_input"], "login");
                 if ($grec_err){
                     $res["error"] = $grec_err;
                     $res["ok"] = false;
@@ -293,7 +293,7 @@
             }
 
             //Checking for bots
-            $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "specialize");
+            $grec_err = SecurityService::validateRecaptchaResp($_POST["recaptcha_input"], "specialize");
             if ($grec_err){
                 $res["error"] = $grec_err;
                 $res["ok"] = false;
