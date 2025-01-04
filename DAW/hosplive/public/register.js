@@ -1,12 +1,23 @@
 addEventListener('DOMContentLoaded', function(event) {
-    let send_verif_btn = document.getElementById('send_verif_btn');
-    let inputs = document.getElementById("inputs_div").children;
+    let register_form = document.getElementById('register_form');
 
-    send_verif_btn.addEventListener('click', (event) =>{
-        //Creating form object and filling it with the data from the inputs
-        let data = new FormData();
+    register_form.addEventListener('submit', (event) =>{
+        event.preventDefault();
+        //Making sure recaptcha library is loaded
+        grecaptcha.ready(() => {
+            //Getting the user activity representive token and sending the form
+            grecaptcha.execute(recaptcha_input.getAttribute("site_key"), { action: 'register' }).then((token) => {
+                recaptcha_input.value = token;
+                sendRegistrationForm(event.target);
+            });
+        });
         
-        Array.from(inputs).forEach(input => data.append(input.name, input.value));
+    });
+
+    function sendRegistrationForm(register_form){
+        //Creating form object and filling it with the data from the inputs
+        let data = new FormData(register_form);
+
         fetch("add_user", {
             method: "POST",
             body: data
@@ -18,5 +29,5 @@ addEventListener('DOMContentLoaded', function(event) {
             if (resp.hasOwnProperty('redirect'))
                 window.location.href = resp.redirect;
         }));
-    });
+    }
 });

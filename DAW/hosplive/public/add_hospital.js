@@ -2,24 +2,22 @@ addEventListener("DOMContentLoaded", () => {
     let hospital_form = document.getElementById("hospital_form");
     let county_sugg = document.getElementById("county_list");
     let county_input = document.getElementById("county_input");
+    let recaptcha_input = document.getElementById("recaptcha_input");
+    let hospital_id_input = document.getElementById("hospital_id");
 
     hospital_form.addEventListener("submit", (event) => {
         event.preventDefault();
 
-        let data = new FormData();
-        data.append("county_id", document.getElementById(county_input.value).getAttribute("county_id"));
+        //Making sure recaptcha library is loaded
+        grecaptcha.ready(() => {
+            //Getting the user activity representive token and sending the form
+            grecaptcha.execute(recaptcha_input.getAttribute("site_key"), { action: 'specialize' }).then((token) => {
+                recaptcha_input.value = token;
+                sendHospitalForm();
+            });
+        });
+
         
-        fetch("specialize_user", {
-            method: "POST",
-            body: data
-        }).then((response) => response.json()).then((resp) => {
-            if (resp.ok) 
-                window.location.href = resp.redirect;
-            else {
-                alert("Error specializing user")
-                console.log(resp.error)
-            }
-        })
     });
 
     county_input.addEventListener("input", function(event){
@@ -31,6 +29,33 @@ addEventListener("DOMContentLoaded", () => {
         else
             makeSuggestions(county_sugg, event.target);
     });
+
+    function sendHospitalForm(){
+        //Making sure the specialization is chosen from the list
+        let chosen_county = document.getElementById(county_input.value.toLowerCase());
+        if (!chosen_county){
+            alert("Invalid county");
+            return;
+        }
+        
+        let data = new FormData();
+        data.append("county_id", chosen_county.getAttribute("county_id"));
+        data.append(hospital_id_input.name, hospital_id_input.value);
+        data.append(recaptcha_input.name, recaptcha_input.value);
+        
+        fetch("specialize_user", {
+            method: "POST",
+            body: data
+        }).then((response) => response.json().then((resp) => {
+            if (resp.ok) 
+                window.location.href = resp.redirect;
+            else {
+                alert("Error specializing user")
+                console.log(resp.error)
+            }
+        }));
+    }
+
     //Create divs for each option that starts with the input value
     function makeSuggestions(sugg_list, input_elem){
         let input_data = input_elem.value;

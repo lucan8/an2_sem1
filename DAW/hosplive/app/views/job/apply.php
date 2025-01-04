@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Apply</title>
+        <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha["front_key"]?>"></script>
         <script src="../../public/apply.js?$$REVESION$$"></script>
     </head>
     <body>
@@ -12,9 +13,10 @@
                 <option disabled>Select County</option>
                 <?php 
                     foreach ($hospitals as $county => $hospital){
-                        echo "<option value='{$county}' id='{$county}' hosp_user_id='{$hospital->user_id}' disabled>{$county}</option>";
+                        echo "<option value='{$county}' id='" . strtolower($county) . "' hospital_id='{$hospital->hospital_id}' disabled>{$county}</option>";
                     }?>
             </datalist>
+            <input type="hidden" name="recaptcha_input" id="recaptcha_input" site_key="<?php echo Config\config_recaptcha["front_key"]?>">
             <input type="submit" id="apply_btn" value="Apply">
         </form>
     </body>

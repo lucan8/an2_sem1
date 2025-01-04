@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha["front_key"]?>"></script>
     <script src="../../public/make_appointments.js?$$REVISION$$" type='module'></script>
     <title>Make Appointments</title>
 </head>
@@ -46,14 +45,14 @@
 
     <!-- Form with actual data -->
     <form id="appointment_form" hidden>
-        <!--Temporary solution-->
-        <input type="number" id="user_id" name="user_id">
+        <input type="number" id="patient_id" name="patient_id" value="<?php echo $_SESSION["user_id"]?>">
         <input type="number" id="hospital_id" name="hospital_id">
         <input type="number" id="medic_id" name="medic_id">
         <input type="date" id="appointment_date" name="appointment_date">
         <input type="time" id="appointment_time" name="appointment_time">
         <input type="number" id="room_id" name="room_id">
         <input type="number" id="duration" name="duration">
+        <input type="hidden" name="recaptcha_input" id="recaptcha_input" site_key="<?php echo Config\config_recaptcha["front_key"]?>">
     </form>
 </body>
 </html>

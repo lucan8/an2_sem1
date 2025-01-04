@@ -40,7 +40,7 @@ addEventListener("DOMContentLoaded", async (event) => {
         }
         else
             resetSpec();
-        makeSuggestions(county_sugg, event.target, () => spec_input.disabled = false);
+        makeSuggestions(county_sugg, event.target);
     });
 
     spec_input.addEventListener("input", function(event){
@@ -54,7 +54,7 @@ addEventListener("DOMContentLoaded", async (event) => {
         else
             resetMedics();
 
-        makeSuggestions(spec_sugg, event.target, fillMedicsSelect);
+        makeSuggestions(spec_sugg, event.target);
     });
 
     medic_select.addEventListener("change", function(event){
@@ -105,6 +105,18 @@ addEventListener("DOMContentLoaded", async (event) => {
 
     //Filling the form with the remaining data and sending it to the server
     fill_form_btn.addEventListener("click", function(){
+        //Making sure recaptcha library is loaded
+        grecaptcha.ready(() => {
+            //Getting the user activity representive token and sending the form
+            grecaptcha.execute(recaptcha_input.getAttribute("site_key"), { action: 'make_appointment' }).then((token) => {
+                recaptcha_input.value = token;
+                sendAppointmentsForm(app_form);
+            });
+        });
+    });
+
+    //Fills hidden appointments form and sends it to the server with fetch
+    function sendAppointmentsForm(app_form){
         fillForm();
         let data = new FormData(app_form);
 
@@ -117,13 +129,13 @@ addEventListener("DOMContentLoaded", async (event) => {
                 resetCounties();
             }
             else{
-                alert("Failed to make appointment(interal error)");
+                alert("Failed to make appointment");
                 console.log(response['error'])
             }
         }));
-    });
+    }
 
-    //Create divs for each option that starts with the input value
+    //Enable all options from sugg_list that start with input_elem's value  
     function makeSuggestions(sugg_list, input_elem){
         let input_data = input_elem.value;
         if (input_data == "") return;
@@ -138,7 +150,7 @@ addEventListener("DOMContentLoaded", async (event) => {
     // and adds them to the medic select element
     // Also sets the chosen hospital id
     function fillMedicsSelect(){
-        fetch('getMedics?county_id=' + document.getElementById(county_input.value).getAttribute('name') +
+        fetch('/hosplive/get_medics?county_id=' + document.getElementById(county_input.value).getAttribute('name') +
                 '&spec_id=' + document.getElementById(spec_input.value).getAttribute('name'))
                 .then(response => {
                     response.json().then(res => {
@@ -148,6 +160,7 @@ addEventListener("DOMContentLoaded", async (event) => {
                             return;
                         }
                         chosen_hospital_in.value = res['data']['chosen_hospital']
+                        //console.log(res['data']['medics']);
                         res['data']['medics'].forEach(
                             medic => { let medic_info = medic.medic_name + ": " + medic.years_exp + " years experience";
                                        utils_app.addOption(medic_select, medic.medic_id, medic_info)});

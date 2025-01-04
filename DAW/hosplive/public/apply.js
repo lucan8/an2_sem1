@@ -2,17 +2,33 @@ addEventListener("DOMContentLoaded", (event) => {
     let apply_form = document.getElementById("apply_form");
     let input_county = document.getElementById("county_input");
     let county_sugg = document.getElementById("county_list");
+    let recaptcha_input = document.getElementById("recaptcha_input");
 
     apply_form.addEventListener("submit", (event) => {
         event.preventDefault();
-        let chosen_hosp =  document.getElementById(input_county.value);
+        
+        //Making sure recaptcha library is loaded
+        grecaptcha.ready(() => {
+        //Getting the user activity representive token and sending the form
+        grecaptcha.execute(recaptcha_input.getAttribute("site_key"), { action: 'job_application' }).then((token) => {
+            recaptcha_input.value = token;
+            sendApplicationForm();
+        });
+    });
+       
+    });
+
+    function sendApplicationForm(){
         //Checking that the hospital actually exists
+        let chosen_hosp =  document.getElementById(input_county.value.toLowerCase());
         if (!chosen_hosp){
             alert("Hospital from " + input_county.value + " does not exist!");
             return;
         }
+
         let data = new FormData();
-        data.append("hosp_user_id", chosen_hosp.getAttribute("hosp_user_id"));
+        data.append("hospital_id", chosen_hosp.getAttribute("hospital_id"));
+        data.append(recaptcha_input.name, recaptcha_input.value)
 
         fetch("apply", {
             method: "POST",
@@ -25,7 +41,7 @@ addEventListener("DOMContentLoaded", (event) => {
                 console.log(resp.error);
             }
         }));
-    });
+    }
 
     county_input.addEventListener("input", (event) => {
         let input_county = event.target.value;
