@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha['front_key']?>"></script>
-    <link href="../../public/register.css?$$REVISION$$" rel="stylesheet">
-    <script src="../../public/register.js?$$REVISION$$" type="module"></script>
+    <link href="../../public/css/register.css?$$REVISION$$" rel="stylesheet">
+    <script src="../../public/js/register.js?$$REVISION$$" type="module"></script>
     <title>Register</title>
 </head>
 

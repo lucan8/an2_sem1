@@ -3,8 +3,8 @@
     <head>
         <title>Login</title>
         <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha["front_key"]?>"></script>
-        <link rel="stylesheet" type="text/css" href="../../public/login.css?$$REVISION$$">
-        <script src="../../public/login.js?$$REVISION$$" type="module"></script>
+        <link rel="stylesheet" type="text/css" href="../../public/css/login.css?$$REVISION$$">
+        <script src="../../public/js/login.js?$$REVISION$$" type="module"></script>
     </head>
     <body>
         <h1>This is a 2-step login process</h1>

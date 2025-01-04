@@ -4,8 +4,8 @@
     <head>
         <title>Register Hospital</title>
         <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha["front_key"]?>"></script>
-        <script src="../../public/add_hospital.js?$$REVISION$$" type="module"></script>
-        <link href="../../public/add_hospital.css?$$REVISION$$" rel="stylesheet">
+        <script src="../../public/js/add_hospital.js?$$REVISION$$" type="module"></script>
+        <link href="../../public/css/add_hospital.css?$$REVISION$$" rel="stylesheet">
     </head>
     <body>
         <h1>You have been verified succesfully!</h1>

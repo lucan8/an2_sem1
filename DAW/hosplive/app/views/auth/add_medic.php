@@ -4,8 +4,8 @@
     <head>
         <title>Register Medic</title>
         <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha["front_key"]?>"></script>
-        <script src="../../public/add_medic.js?$$REVISION$$" type="module"></script>
-        <link href="../../public/add_medic.css?$$REVISION$$" rel="stylesheet">
+        <script src="../../public/js/add_medic.js?$$REVISION$$" type="module"></script>
+        <link href="../../public/css/add_medic.css?$$REVISION$$" rel="stylesheet">
     </head>
     <body>
         <h1>You have been verified succesfully!</h1>

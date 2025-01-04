@@ -3,7 +3,7 @@
     <head>
         <title>Job Applications</title>
         <link rel="stylesheet" type="text/css" href="../../public/appointments.css?$$REVISION$$">
-        <script src="../../public/hospital_applications.js?$$REVISION$$" type='module'></script>
+        <script src="../../public/js/hospital_applications.js?$$REVISION$$" type='module'></script>
     </head>
 
     <body>

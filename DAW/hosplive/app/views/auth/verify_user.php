@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="../../public/verify_user.css?$$REVISION$$" rel="stylesheet">
-    <script src="../../public/verify_user.js?$$REVISION$$" type="module"></script>
+    <link href="../../public/css/verify_user.css?$$REVISION$$" rel="stylesheet">
+    <script src="../../public/js/verify_user.js?$$REVISION$$" type="module"></script>
     <title>Verify User</title>
 </head>
 
