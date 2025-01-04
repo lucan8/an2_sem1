@@ -13,8 +13,10 @@ class Controller {
         AuthController::checkLogged();
 
         //Only accepting get requests
-        if ($_SERVER["REQUEST_METHOD"] != "GET")
+        if ($_SERVER["REQUEST_METHOD"] != "GET"){
             http_response_code(405);
+            return;
+        }
 
         $res = ["ok" => true];
          //Getting the unset parameters
@@ -62,8 +64,10 @@ class Controller {
         AuthController::checkLogged();
 
         //Only accepting get requests
-        if ($_SERVER["REQUEST_METHOD"] != "GET")
+        if ($_SERVER["REQUEST_METHOD"] != "GET"){
             http_response_code(405);
+            return;
+        }
 
         $res = ["ok" => true];
         //Getting the statuses
