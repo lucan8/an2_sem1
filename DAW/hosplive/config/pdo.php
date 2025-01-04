@@ -1,5 +1,6 @@
 <?php
     require_once "config/config.php";
+    use const Config\config_hosp;
 
     $pdo = null;
     // try{
@@ -32,16 +33,16 @@
     // }
     try{
         $pdo = new PDO(
-        'mysql:host=' . $config_hosp['host'] . ';port=' . $config_hosp['port'] . ';dbname=' . $config_hosp['db_name'],
-        $config_hosp['username'],
-        $config_hosp['password']
+        'mysql:host=' . config_hosp['host'] . ';port=' . config_hosp['port'] . ';dbname=' . config_hosp['db_name'],
+        config_hosp['username'],
+        config_hosp['password']
         );
     }
     catch(PDOException $e){
         echo $e->getMessage() . "<br>";
-        echo 'mysql:host=' . $config_hosp['host'] . ';port=' . $config_hosp['port'] . ';dbname=' . $config_hosp['db_name'] . "<br>";
-        echo $config_hosp['username'] . "<br>";
-        echo $config_hosp['password'] . "<br>";
+        echo 'mysql:host=' . config_hosp['host'] . ';port=' . config_hosp['port'] . ';dbname=' . config_hosp['db_name'] . "<br>";
+        echo config_hosp['username'] . "<br>";
+        echo config_hosp['password'] . "<br>";
     }
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 ?>
