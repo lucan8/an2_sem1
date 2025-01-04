@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <script src="https://www.google.com/recaptcha/api.js?render=<?php echo Config\config_recaptcha["front_key"]?>"></script>
-    <script src="../../public/make_appointments.js?$$REVISION$$" type='module'></script>
+    <script src="../../public/js/make_appointments.js?$$REVISION$$" type='module'></script>
     <title>Make Appointments</title>
 </head>
 <body>
@@ -52,6 +52,7 @@
         <input type="time" id="appointment_time" name="appointment_time">
         <input type="number" id="room_id" name="room_id">
         <input type="number" id="duration" name="duration">
+        <input type="hidden" name="csrf_token" id="csrf_token" value="<?php echo $csrf_token?>">
         <input type="hidden" name="recaptcha_input" id="recaptcha_input" site_key="<?php echo Config\config_recaptcha["front_key"]?>">
     </form>
 </body>

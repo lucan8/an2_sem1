@@ -1,7 +1,7 @@
 <?php
     require_once "config/config.php";
     require_once "app/controllers/AuthController.php";
-    require_once "app/services/RecaptchaService.php";
+    require_once "app/services/SecurityService.php";
     require_once "app/services/DocumentService.php";
 
     class JobController{
@@ -32,13 +32,17 @@
             if ($_SERVER["REQUEST_METHOD"] == "GET"){
                 require_once "app/views/layout.php";
                 require_once "app/models/Hospitals.php";
+
+                //Get the available hospitals
                 $hospitals = Hospitals::getHospitalsAndCounties();
+                //Generate CSRF token for the form
+                $csrf_token = SecurityService::generateCSRFToken();
                 require_once "app/views/job/apply.php";
             }
             else if ($_SERVER["REQUEST_METHOD"] == "POST"){
                 //Getting the unset parameters
                 $res = ["ok" => true];
-                $unset_params = array_filter(["hospital_id", "recaptcha_input"], function($param){
+                $unset_params = array_filter(["hospital_id", "recaptcha_input", "csrf_token"], function($param){
                     return !isset($_POST[$param]) || $_POST[$param] == ""; 
                 });
 
@@ -50,9 +54,17 @@
                     return;
                 }
                 //Checking for bots
-                $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "job_application");
+                $grec_err = SecurityService::validateRecaptchaResp($_POST["recaptcha_input"], "job_application");
                 if ($grec_err){
                     $res["error"] = $grec_err;
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
+
+                //Checking the CSRF token
+                if (!SecurityService::checkCSRFToken($_POST["csrf_token"])){
+                    $res["error"] = "Invalid CSRF token";
                     $res["ok"] = false;
                     echo json_encode($res);
                     return;
@@ -70,6 +82,9 @@
                     $res["error"] = $e->getMessage();
                     $res["ok"] = false;
                 }
+
+                //Generating a new CSRF token
+                $res["csrf_token"] = SecurityService::generateCSRFToken();
                 echo json_encode($res);
             }
         }

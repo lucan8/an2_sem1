@@ -3,7 +3,7 @@
     require_once "utils/utils.php";
     require_once "AbstractController.php";
     require_once "AuthController.php";
-    require_once "app/services/RecaptchaService.php";
+    require_once "app/services/SecurityService.php";
 
 class AppointmentsController implements AbstractController {
     public static function index() {
@@ -62,6 +62,8 @@ class AppointmentsController implements AbstractController {
             require_once "app/models/Hospitals.php";
             require_once "app/models/Appointments.php";
 
+            //Generate CSRF token for the form
+            $csrf_token = SecurityService::generateCSRFToken();
             //Render the view
             require_once "app/views/appointments/make_appointment.php";
         }
@@ -74,6 +76,7 @@ class AppointmentsController implements AbstractController {
             //Setting the necessary parameters for the appointment form
             $necessary_params = get_class_vars("AppointmentsData");
             $necessary_params["recaptcha_input"] = null;
+            $neccessary_params["csrf_token"] = null;
 
             //Getting the unset parameters
             $unset_parameters = array_filter($necessary_params, function($def_val, $col){
@@ -91,9 +94,17 @@ class AppointmentsController implements AbstractController {
             }
 
             //Checking for bots
-            $grec_err = RecaptchaService::validateRecaptchaResp($_POST["recaptcha_input"], "make_appointment");
+            $grec_err = SecurityService::validateRecaptchaResp($_POST["recaptcha_input"], "make_appointment");
             if ($grec_err){
                 $res["error"] = $grec_err;
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            //Checking the CSRF token
+            if (!SecurityService::checkCSRFToken($_POST["csrf_token"])){
+                $res["error"] = "Invalid CSRF token";
                 $res["ok"] = false;
                 echo json_encode($res);
                 return;
@@ -109,6 +120,9 @@ class AppointmentsController implements AbstractController {
                 $res['error'] = $e->getMessage();
                 $res['ok'] = false;
             }
+
+            //Generating a new CSRF token
+            $res["csrf_token"] = SecurityService::generateCSRFToken();
             echo json_encode($res);
         }
     }
