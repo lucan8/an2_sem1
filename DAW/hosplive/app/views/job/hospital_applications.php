@@ -10,7 +10,7 @@
         <h1>These are your received job applications</h1>
         <?php
             foreach ($applications as $application){
-                echo "<div class='appointment_cont' applicant_user_id='". $application["applicant_user_id"] . "' id='" . $application["id"] . "'>";
+                echo "<div class='appointment_cont' applicant_id='". $application["applicant_id"] . "' id='" . $application["id"] . "'>";
                 echo "<div>Applicant name: " . $application["medic_name"] . "</div>";
                 echo "<div>Years of experience: " . $application["years_exp"] . "</div>"; 
                 echo "<div>Specializaiton: " . $application["specialization"] . "</div>";
