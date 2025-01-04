@@ -1,7 +1,6 @@
 import * as utils_app from './utils_appointments.js';
 addEventListener("DOMContentLoaded", async (event) => {
     const app_constants = await utils_app.getConstants();
-    console.log(app_constants);
 
     let county_sugg = document.getElementById("county_list");
 
@@ -29,6 +28,9 @@ addEventListener("DOMContentLoaded", async (event) => {
     let app_form = document.getElementById("appointment_form");
     let chosen_room_in = document.getElementById("room_id");
     let chosen_duration_in = document.getElementById("duration");
+
+    let csrf_token = document.getElementById("csrf_token");
+    let recaptcha_input = document.getElementById("recaptcha_input");
 
     county_input.addEventListener("input", function(event){
         let input_county = event.target.value;
@@ -124,8 +126,9 @@ addEventListener("DOMContentLoaded", async (event) => {
             method: "POST",
             body: data
         }).then(response => response.json().then(response => {
-            if (response['ok']){
+            if (response.ok){
                 alert("Appointment made successfully");
+                csrf_token.value = response.csrf_token;
                 resetCounties();
             }
             else{

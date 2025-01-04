@@ -3,6 +3,7 @@ addEventListener("DOMContentLoaded", (event) => {
     let input_county = document.getElementById("county_input");
     let county_sugg = document.getElementById("county_list");
     let recaptcha_input = document.getElementById("recaptcha_input");
+    let csrf_token = document.getElementById("csrf_token");
 
     apply_form.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -28,14 +29,17 @@ addEventListener("DOMContentLoaded", (event) => {
 
         let data = new FormData();
         data.append("hospital_id", chosen_hosp.getAttribute("hospital_id"));
-        data.append(recaptcha_input.name, recaptcha_input.value)
+        data.append(recaptcha_input.name, recaptcha_input.value);
+        data.append(csrf_token.name, csrf_token.value);
 
         fetch("apply", {
             method: "POST",
             body: data
         }).then(response => response.json().then(resp => {
-            if (resp.ok)
+            if (resp.ok){
                 alert("Job application sent!");
+                csrf_token.value = resp.csrf_token;
+            }
             else{
                 alert("Error sending job application!");
                 console.log(resp.error);
