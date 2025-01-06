@@ -631,6 +631,15 @@
 
     private static function createSession(UsersData $user, SessionCreatedFrom $from){
         require_once "app/models/Roles.php";
+        //Setting up the session cookie parameters
+        session_set_cookie_params([
+            "lifetime" => 0, //Dies when browser is closed
+            "path" => "/",
+            "domain" => $_SERVER["HTTP_HOST"],
+            "secure" => false,
+            "httponly" => true,
+            "samesite" => "Strict"
+        ]);
         //Setting up the session
         session_regenerate_id(true);
         $_SESSION["user_id"] = $user->user_id;
