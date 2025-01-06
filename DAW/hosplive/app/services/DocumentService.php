@@ -6,7 +6,7 @@
         public static function storeMedicCV(string $file_key, int $medic_user_id): string|null{
             //File validation
             $accepted_formats = ["application/pdf"];
-            $file_max_size = 1024 * 100; // 100KB
+            $file_max_size = 1024 * 300; // 300KB
             $err = self::validateFile($file_key, $accepted_formats, $file_max_size);
             if ($err)
                 return $err;
@@ -30,7 +30,7 @@
         public static function storeHiringContract(string $file_key, int $hirer_user_id, int $applicant_user_id): string|null{
             //File validation
             $accepted_formats = ["application/pdf"];
-            $file_max_size = 1024 * 300; // 300KB
+            $file_max_size = 1024 * 500; // 500KB
             $err = self::validateFile($file_key, $accepted_formats, $file_max_size);
             if ($err)
                 return $err;
