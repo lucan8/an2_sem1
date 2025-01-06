@@ -23,12 +23,11 @@ addEventListener("DOMContentLoaded", (event) =>{
             'method': 'POST',
             'body': data
         }).then((response) => response.json().then((resp) =>{
-            if (resp.ok)
+            if (!resp.ok)
+                alert("Error loggin user in: " + resp.error);
+
+            if (resp.redirect)
                 window.location.href = resp.redirect;
-            else{
-                alert("Error loggin user in");
-                console.log(resp.error);
-            }
         }));
     }
 });
