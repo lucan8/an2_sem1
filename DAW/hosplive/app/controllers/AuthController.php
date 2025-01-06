@@ -118,8 +118,8 @@
                 $hashed_password = password_hash($_POST["password"], PASSWORD_DEFAULT);
 
                 //Populate the user object
-                $user = new UsersData(null, $_POST["birth_date"], $_POST["gender_id"], $_POST["first_name"],
-                                      $_POST["last_name"], $_POST["phone_number"], $_POST["user_name"],
+                $user = new UsersData(null, $_POST["birth_date"], $_POST["gender_id"], htmlspecialchars($_POST["first_name"]),
+                                      htmlspecialchars($_POST["last_name"]), htmlspecialchars($_POST["phone_number"]), htmlspecialchars($_POST["user_name"]),
                                       $hashed_password, $_POST["email"], $_POST["role_id"],
                                       $secret, $code);
                 //Insert user in database in unverified state
@@ -300,6 +300,18 @@
                 echo json_encode($res);
                 return;
             }
+
+            //TODO: Move this in a medics handler or something
+            //Medics also need to upload their CV
+            if ($_SESSION["user_role"] == "medic"){
+                $err = DocumentService :: storeMedicCV("medic_cv", $_SESSION["user_id"]);
+                if ($err){
+                    $res["error"] = $err;
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
+            }
             //Creating the spcialized user object and populating it
             $spec_user = new ($chosen_model . 'Data')();
             
@@ -314,18 +326,6 @@
                 $res["ok"] = false;
                 echo json_encode($res);
                 return;
-            }
-
-            //TODO: Move this in a medics handler or something
-            //Medics also need to upload their CV
-            if ($_SESSION["user_role"] == "medic"){
-                $err = DocumentService :: storeMedicCV("medic_cv", $_SESSION["user_id"]);
-                if ($err){
-                    $res["error"] = $err;
-                    $res["ok"] = false;
-                    echo json_encode($res);
-                    return;
-                }
             }
 
             //Setting the session to logged
