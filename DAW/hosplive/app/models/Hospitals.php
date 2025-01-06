@@ -45,7 +45,7 @@
         }
 
         public static function getNeccesaryRows(): array{
-            return ['county_id'];
+            return ['hospital_id', 'county_id'];
         }
 
         public static function getIdColumn(): string{

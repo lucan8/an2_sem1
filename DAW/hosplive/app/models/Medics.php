@@ -45,7 +45,7 @@
         }
 
         public static function getNeccesaryRows(): array{
-            return ['specialization_id', 'years_exp'];
+            return ['medic_id', 'specialization_id', 'years_exp'];
         }
 
         public static function getIdColumn(): string{
