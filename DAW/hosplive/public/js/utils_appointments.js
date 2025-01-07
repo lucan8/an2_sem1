@@ -56,7 +56,7 @@ export function enableFreeTimeIntervals(unavailable_times, time_options){
     }
 
     // Time options include unvailable times so we need to enable the rest
-    while (t_options_index < time_options.childElementCount){
+    while (t_options_index < time_options.length){
         time_options[t_options_index].disabled = false;
         time_options[t_options_index].hidden = false;
         t_options_index++;
