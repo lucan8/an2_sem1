@@ -1,4 +1,5 @@
 <?php
+    //SESSION COOKIES ARE SET IN CHECKLOGGED/CHECKLOGGEDAUTH AS THEY ARE THE FIRST TO CREATE THE SESSION
     require_once "app/controllers/AbstractController.php";
     require_once "app/models/Users.php";
     require_once "app/services/DocumentService.php";
@@ -464,8 +465,7 @@
         //Determining which error to return
         if (self::isCodeExpired($user))
             return "Verification code expired";
-        return "Invalid code";
-        
+        return "Invalid code"; 
     }
 
     //Resends the verification code to the user
@@ -604,8 +604,10 @@
     //Checks if the user is logged in and redirects them to the login page if not
     public static function checkLogged(){
         //Starting session if not already started
-        if (session_status() === PHP_SESSION_NONE)
+        if (session_status() === PHP_SESSION_NONE){
+            self::setSessionCookie();
             session_start();
+        }
         $logged = isset($_SESSION["logged"]) && $_SESSION["logged"];
         $redirect = "/hosplive/auth/login";
 
@@ -619,7 +621,11 @@
     //Checks if user is logged in and redirects them to the index page if they are
     //Private because it should only be used on auth routes(except logout)
     private static function checkLoggedAuth(){
-        session_start();
+         //Starting session if not already started
+         if (session_status() === PHP_SESSION_NONE){
+            self::setSessionCookie();
+            session_start();
+         }
         $logged = isset($_SESSION["logged"]) && $_SESSION["logged"];
         $redirect = "/hosplive/index";
 
@@ -631,15 +637,6 @@
 
     private static function createSession(UsersData $user, SessionCreatedFrom $from){
         require_once "app/models/Roles.php";
-        //Setting up the session cookie parameters
-        session_set_cookie_params([
-            "lifetime" => 0, //Dies when browser is closed
-            "path" => "/",
-            "domain" => $_SERVER["HTTP_HOST"],
-            "secure" => false,
-            "httponly" => true,
-            "samesite" => "Strict"
-        ]);
         //Setting up the session
         session_regenerate_id(true);
         $_SESSION["user_id"] = $user->user_id;
@@ -652,6 +649,16 @@
         $_SESSION["logged"] = false;
     }
 
+    private static function setSessionCookie(){
+        session_set_cookie_params([
+            "lifetime" => 0, //Dies when browser is closed
+            "path" => "/",
+            "domain" => $_SERVER["HTTP_HOST"],
+            "secure" => false,
+            "httponly" => true,
+            "samesite" => "Strict"
+        ]);
+    }
     public static function setAuth(){
         if (!isset(self::$ga))
             self::$ga = new PHPGangsta_GoogleAuthenticator();
