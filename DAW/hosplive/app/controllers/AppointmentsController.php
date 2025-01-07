@@ -5,16 +5,23 @@
     require_once "AuthController.php";
     require_once "app/services/SecurityService.php";
 
+//The enum vlaues represent the action which should be taken for the appointment in that state
+enum AppointmentState:string {
+    case UPCOMING = "wait";
+    case FINISHED = "write summary";
+    case HAS_SUMMARY = "view summary";
+}
+
 class AppointmentsController implements AbstractController {
     public static function index() {
         AuthController::checkLogged();
 
-        //For now only patients can view their appointments
-        //In the feature both medics and hospitals will have this feature
-        if ($_SESSION["user_role"] != "pacient"){
+         //For now only patients and medics can view their appointments
+         if (!in_array($_SESSION["user_role"], ["medic", "pacient"])){
             http_response_code(403);
             return;
         }
+
         //Accepting only get requests
         if ($_SERVER["REQUEST_METHOD"] != "GET"){
             http_response_code(405);
@@ -28,18 +35,7 @@ class AppointmentsController implements AbstractController {
         self::add();
         
         // Render appointments
-        require_once "app/models/Appointments.php";
-        require_once "app/models/Roles.php";
-
-        //Getting the user's appointments
-        $appointments = Appointments::getAppointmentsByPatient($_SESSION["user_id"]);
-
-        //Setting the correct format for the time
-        foreach ($appointments as &$app){
-            $app['time'] = getHoursAndMinutes($app['time']);
-        }
-
-        require_once "app/views/appointments/appointments.php";
+        self::get();
     }
 
     public static function add() {
@@ -110,6 +106,16 @@ class AppointmentsController implements AbstractController {
                 return;
             }
 
+            //Checking that the date and time are in the future
+            $now = strtotime("now");
+            $app_datetime = strtotime($_POST["appointment_date"] . " " . $_POST["appointment_time"]);
+            if ($now >= $app_datetime){
+                $res["error"] = "The appointment date and time must be in the future";
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
             //Setting the appointment data to be inserted
             $app = new AppointmentsData(null, $_SESSION["user_id"], (int)$_POST["hospital_id"], (int)$_POST["medic_id"],
                                         (int)$_POST["room_id"], $_POST["appointment_date"], $_POST["appointment_time"],
@@ -127,10 +133,48 @@ class AppointmentsController implements AbstractController {
         }
     }
 
+    public static function get() {
+        AuthController::checkLogged();
+        //For now only patients and medics can view their appointments
+        if (!in_array($_SESSION["user_role"], ["medic", "pacient"])){
+            http_response_code(403);
+            return;
+        }
+
+        //Accepting only get requests
+        if ($_SERVER["REQUEST_METHOD"] != "GET"){
+            http_response_code(405);
+            return;
+        }
+        // Render appointments
+        require_once "app/models/Appointments.php";
+        require_once "app/models/Roles.php";
+
+        //Getting the user's appointments
+        $appointments = self::getAppointments($_SESSION["user_id"]);
+
+        //Setting the correct format for the time
+        foreach ($appointments as &$app){
+            $app['time'] = getHoursAndMinutes($app['time']);
+            $app['app_info_state'] = self::getAppointmentState($app);
+        }
+
+        //Generating the csrf token
+        $csrf_token = SecurityService::generateCSRFToken();
+
+        //Render the appointments view
+        require_once "app/views/appointments/appointments.php";
+    }
+    
     public static function remove(){
         AuthController::checkLogged();
 
-       
+        //For now only patients and medics can view their appointments
+        if (!in_array($_SESSION["user_role"], ["medic", "pacient"])){
+            http_response_code(403);
+            return;
+        }
+
         //Only accepting post requests
         if ($_SERVER["REQUEST_METHOD"] != "POST"){
             http_response_code(405);
@@ -139,7 +183,7 @@ class AppointmentsController implements AbstractController {
 
         $res = ["ok" => true];
         //Getting the unset parameters
-        $unset_parameters = array_filter(["appointment_id"], function($param){
+        $unset_parameters = array_filter(["appointment_id", "csrf_token"], function($param){
             return !isset($_POST[$param]) || $_POST[$param] == "";
         });
 
@@ -151,7 +195,26 @@ class AppointmentsController implements AbstractController {
             return;
         }
 
+        //Checking the CSRF token
+        if (SecurityService::checkCSRFToken($_POST["csrf_token"])){
+            $res["error"] = "Invalid CSRF token";
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+
         require_once "app/models/Appointments.php";
+        //Making sure the appointment exists and the user is the owner
+        $err = self::checkUserOwnsAppointment((int)$_POST["appointment_id"]);
+        if ($err){
+            $res["error"] = $err;
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+
+
+        //Removing the appointment
         try{
             $res["ok"] = Appointments::removeById((int)$_POST["appointment_id"]);
         } catch (Exception $e){
@@ -164,6 +227,12 @@ class AppointmentsController implements AbstractController {
     public static function edit(){
         AuthController::checkLogged();
 
+        //For now only patients and medics can view their appointments
+        if (!in_array($_SESSION["user_role"], ["medic", "pacient"])){
+            http_response_code(403);
+            return;
+        }
+
         //Only accepting post requests
         if ($_SERVER["REQUEST_METHOD"] != "POST"){
             http_response_code(405);
@@ -172,7 +241,7 @@ class AppointmentsController implements AbstractController {
 
         $res = ["ok" => true];
         //Getting the unset parameters
-        $unset_parameters = array_filter(["appointment_id", "appointment_date", "appointment_time"], function($param){
+        $unset_parameters = array_filter(["appointment_id", "appointment_date", "appointment_time", "csrf_token"], function($param){
             return !isset($_POST[$param]) || $_POST[$param] == "";
         });
 
@@ -183,8 +252,36 @@ class AppointmentsController implements AbstractController {
             echo json_encode($res);
             return;
         }
+        
+        //Checking the CSRF token
+        if (SecurityService::checkCSRFToken($_POST["csrf_token"])){
+            $res["error"] = "Invalid CSRF token";
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
 
         require_once "app/models/Appointments.php";
+        //Making sure the appointment exists and the user is the owner
+        $err = self::checkUserOwnsAppointment((int)$_POST["appointment_id"]);
+        if ($err){
+            $res["error"] = $err;
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+
+        //Checking that the date and time are in the future
+        $now = strtotime("now");
+        $app_datetime = strtotime($_POST["appointment_date"] . " " . $_POST["appointment_time"]);
+        if ($now >= $app_datetime){
+            $res["error"] = "The appointment date and time must be in the future";
+            $res["ok"] = false;
+            echo json_encode($res);
+            return;
+        }
+
+        //Updating the appointment date and time 
         try{
             $res["ok"] = Appointments::updateDateTime((int)$_POST["appointment_id"], $_POST["appointment_date"], $_POST["appointment_time"]);
         } catch (Exception $e){
@@ -312,8 +409,6 @@ class AppointmentsController implements AbstractController {
     //     }
     // }
 
-
-    public static function get() {}
     public static function getConstants(){
         AuthController::checkLogged();
         
@@ -328,6 +423,44 @@ class AppointmentsController implements AbstractController {
         require_once "app/models/Appointments.php";
         $res["constants"] = Appointments::getConstants() + Hospitals::getConstants();
         echo json_encode($res["constants"]);
+    }
+
+    private static function getAppointmentState(array $app): AppointmentState|null{
+        require_once "app/models/Appointments_Info.php";
+
+        $now = strtotime("now");
+        $app_datetime = strtotime($app['date'] . " " . $app['time']);
+        //Checking if the has been completed
+        if ($now >= $app_datetime){
+            if (Appointments_Info::getById($app['id']))
+                return AppointmentState::HAS_SUMMARY;
+            return AppointmentState::FINISHED;
+        }
+        return AppointmentState::UPCOMING;
+    }
+
+    private static function checkUserOwnsAppointment(int $appointment_id): string|null{
+        require_once "app/models/Appointments.php";
+        $app = Appointments::getById($appointment_id);
+        if (!$app)
+            return "Invalid appointment id";
+
+        if ($_SESSION["user_role"] == "medic" && $app->medic_id != $_SESSION["user_id"] || 
+            $_SESSION["user_role"] == "pacient" && $app->patient_id != $_SESSION["user_id"])
+            return "Unauthorized";
+        return null;
+    }
+
+    //Based on the user's role, get their appointments using the id
+    private static function getAppointments(int $id): array{
+        switch ($_SESSION['user_role']){
+            case "medic":
+                return Appointments::getAppointmentsByMedic($id);
+            case "pacient":
+                return Appointments::getAppointmentsByPatient($id);
+            default:
+                return [];
+        }
     }
 }
 ?>
