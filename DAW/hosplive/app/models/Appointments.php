@@ -52,6 +52,26 @@
             return $stm->fetchAll();
         }
 
+        //Returns appointments data substituting the ids with the names
+        public static function getAppointmentsByMedic(int $medic_id): array{
+            $query = "SELECT a.appointment_id as id, c.county_name as county,
+                             CONCAT(u.last_name, ' ', u.first_name) as patient_name, p.patient_id, h.hospital_id,
+                             a.appointment_date as date, a.appointment_time as time,
+                             a.room_id as room, a.duration
+                      FROM " . static::class . " a
+                      JOIN hospitals h ON a.hospital_id = h.hospital_id
+                      JOIN patients p ON a.patient_id = p.patient_id
+                      JOIN counties c ON h.county_id = c.county_id
+                      JOIN users u ON p.patient_id = u.user_id
+                      WHERE a.medic_id = ? ORDER BY date, time";
+            self::printQuery($query, [$medic_id]);
+
+            $stm = self::$conn->prepare($query);
+            $stm->execute([$medic_id]);
+
+            return $stm->fetchAll();
+        }
+
         //Gets the first free room for a given hospital, date and time
         //If none is found throw error
         public static function getFreeRoom(int $hospital_id, string $appointment_date, string $appointment_time): AppointmentsData{
