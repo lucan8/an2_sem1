@@ -3,13 +3,16 @@ import * as utils_app from './utils_appointments.js';
 addEventListener("DOMContentLoaded", async event => {
     setInitialData();
     const app_constants = await utils_app.getConstants();
+    let csrf_token = document.getElementById("csrf_token");
 
     Array.from(document.getElementsByClassName("cancel_app")).forEach(btn => {
         btn.addEventListener("click", event => {
             //Getting the appointment id
             let appointment_id = event.target.parentNode.id;
+            
             let data = new FormData();
             data.append("appointment_id", appointment_id);
+            data.append(csrf_token.name, csrf_token.value);
 
             //Sending a post request to cancel the appointment
             fetch("cancel_appointment", {
@@ -42,6 +45,7 @@ addEventListener("DOMContentLoaded", async event => {
             data.append("appointment_id", appointment_id);
             data.append("appointment_date", date_elem.value);
             data.append("appointment_time", time_elem.value);
+            data.append(csrf_token.name, csrf_token.value);
 
             //Sending a post request to edit the appointment
             fetch("edit_appointment", {
@@ -80,8 +84,41 @@ addEventListener("DOMContentLoaded", async event => {
             Array.from(time_select).find(option => option.value == time_select.initial_time).selected = true;
             time_select.value = time_select.initial_time;
         })
-    })
+    });
 
+    Array.from(document.getElementsByClassName("app_info")).forEach(elem => {
+        let app_info_state = elem.getAttribute("app_info_state");
+        //If the appointment is upcoming we disable the button
+        if (app_info_state == "UPCOMING"){
+            elem.disabled = true;
+            return;
+        }
+
+        elem.addEventListener("click", event => {
+            let app_info_state = event.target.getAttribute("app_info_state");
+            let appointment_id = event.target.parentNode.id;
+
+            //Choosing the correct handler based on the appointment state
+            switch(app_info_state){
+                case "HAS_SUMMARY":
+                    hasSummaryHandler(appointment_id);
+                    break;
+                case "FINISHED":
+                    finishedHandler(appointment_id);
+                    break;
+                case "UPCOMING":
+                    upcomingHandler(event.target);
+                    break;
+                case "INEXISTENT":
+                    inexistentHandler(event.target);
+                    break;
+                default:
+                    invalidStateHandler(event.target, app_info_state);
+                    break;
+            }
+        });
+
+    });
 
     //Sets initial date and time for each appointment
     //Adds event listeners to the time inputs to fill the time options or enable the valid ones
@@ -150,6 +187,29 @@ addEventListener("DOMContentLoaded", async event => {
         time_options.value = sel_opt;
 
         return true;
+    }
+    
+    function inexistentHandler(elem){
+        elem.disabled = true;
+        alert("This appointment doesn't exist");
+    }
+
+    function upcomingHandler(elem){
+        elem.disabled = true;
+        alert("You can't write a summary for an upcoming appointment");
+    }
+
+    function invalidStateHandler(elem, app_info_state){
+        elem.disabled = true;
+        alert("Invalid appointment state: " + app_info_state);
+    }
+
+    function hasSummaryHandler(appointment_id){
+        window.location.href = "/hosplive/appointments/view_summary?appointment_id=" + appointment_id;
+    }
+
+    function finishedHandler(appointment_id){
+        window.location.href = "/hosplive/appointments/write_summary?appointment_id=" + appointment_id;
     }
     
 });
