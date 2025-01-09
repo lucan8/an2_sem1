@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>Job Applications</title>
-        <link rel="stylesheet" type="text/css" href="../../public/appointments.css">
+        <link rel="stylesheet" type="text/css" href="../../public/css/appointments.css">
     </head>
 
     <body>
