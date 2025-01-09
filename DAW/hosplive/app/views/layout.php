@@ -12,7 +12,7 @@
             <h1>Welcome to Hosplive</h1>
             <nav id="layout_nav">
                 <a href="/hosplive/index">Home</a>
-                <a href="/hosplive/appointments/appointments">Appointments</a>
+                <a href="/hosplive/appointments/index">Appointments</a>
                 <a href="about_us">About Us</a>
             </nav>
         </header>
