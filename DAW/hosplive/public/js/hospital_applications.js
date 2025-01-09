@@ -95,7 +95,7 @@ addEventListener("DOMContentLoaded", (event) => {
             if (!cv_url)
                 return;
             
-            let child_window = window.open("/public/cv.html");
+            let child_window = window.open("/public/html/cv.html");
 
             //Sending the cv temp url to the child window 
             child_window.addEventListener("load", (event) => {
