@@ -23,9 +23,10 @@
         public static function getByApplicant(int $applicant_id): array{
             $query = "SELECT c.county_name as county, ja.job_application_id as id,
                       ja.application_date as date, js.application_status_name as status
-                      FROM job_applications ja JOIN hospitals h ON h.hospital_id = ja.hirer_id
-                      JOIN counties c ON c.county_id = h.county_id
-                      JOIN application_statuses js ON js.application_status_id = ja.application_status_id
+                      FROM Job_Applications ja
+                      JOIN Hospitals h ON h.hospital_id = ja.hirer_id
+                      JOIN Counties c ON c.county_id = h.county_id
+                      JOIN Application_statuses js ON js.application_status_id = ja.application_status_id
                       WHERE applicant_id = ? ORDER BY ja.application_date DESC"; 
             self::printQuery($query, [$applicant_id]);
 
@@ -40,10 +41,11 @@
             $query = "SELECT concat(u.last_name, ' ', u.first_name) as medic_name, ja.applicant_id, m.years_exp,
                       s.specialization_name as specialization, ja.job_application_id as id,
                       ja.application_date as date, js.application_status_name as status, js.application_status_id as status_id
-                      FROM job_applications ja JOIN medics m ON m.medic_id = ja.applicant_id
-                      JOIN specializations s ON s.specialization_id = m.specialization_id
-                      JOIN users u ON u.user_id = m.medic_id
-                      JOIN application_statuses js ON js.application_status_id = ja.application_status_id
+                      FROM Job_Applications ja 
+                      JOIN Medics m ON m.medic_id = ja.applicant_id
+                      JOIN Specializations s ON s.specialization_id = m.specialization_id
+                      JOIN Users u ON u.user_id = m.medic_id
+                      JOIN Application_Statuses js ON js.application_status_id = ja.application_status_id
                       WHERE hirer_id = ? ORDER BY ja.application_date DESC"; 
             self::printQuery($query, [$hirer_id]);
 
@@ -55,7 +57,7 @@
 
         //Get the application that has the given applicant and hirer
         public static function getByApplicantAndHirer(int $applicant_id, int $hirer_id): Job_ApplicationsData|false{
-            $query = "SELECT * FROM job_applications WHERE applicant_id = ? AND hirer_id = ?";
+            $query = "SELECT * FROM " . static::class . " WHERE applicant_id = ? AND hirer_id = ?";
             self::printQuery($query, [$applicant_id, $hirer_id]);
             
             $stm = self::$conn->prepare($query);
@@ -67,7 +69,7 @@
         
         //Update the status of the application to the new status
         public static function updateStatus(int $application_id, int $new_status_id){
-            $query = "UPDATE job_applications SET application_status_id = ? WHERE job_application_id = ?";
+            $query = "UPDATE " . static::class . " SET application_status_id = ? WHERE job_application_id = ?";
             self::printQuery($query, [$new_status_id, $application_id]);
 
             $stm = self::$conn->prepare($query);

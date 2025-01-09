@@ -39,10 +39,10 @@
                              a.appointment_date as date, a.appointment_time as time,
                              a.room_id as room, a.duration
                       FROM " . static::class . " a
-                      JOIN hospitals h ON a.hospital_id = h.hospital_id
-                      JOIN medics m ON a.medic_id = m.medic_id
-                      JOIN counties c ON h.county_id = c.county_id
-                      JOIN users u ON m.medic_id = u.user_id
+                      JOIN Hospitals h ON a.hospital_id = h.hospital_id
+                      JOIN Medics m ON a.medic_id = m.medic_id
+                      JOIN Counties c ON h.county_id = c.county_id
+                      JOIN Users u ON m.medic_id = u.user_id
                       WHERE a.patient_id = ? ORDER BY date, time";
             self::printQuery($query, [$patient_id]);
 
@@ -59,10 +59,10 @@
                              a.appointment_date as date, a.appointment_time as time,
                              a.room_id as room, a.duration
                       FROM " . static::class . " a
-                      JOIN hospitals h ON a.hospital_id = h.hospital_id
-                      JOIN patients p ON a.patient_id = p.patient_id
-                      JOIN counties c ON h.county_id = c.county_id
-                      JOIN users u ON p.patient_id = u.user_id
+                      JOIN Hospitals h ON a.hospital_id = h.hospital_id
+                      JOIN Patients p ON a.patient_id = p.patient_id
+                      JOIN Counties c ON h.county_id = c.county_id
+                      JOIN Users u ON p.patient_id = u.user_id
                       WHERE a.medic_id = ? ORDER BY date, time";
             self::printQuery($query, [$medic_id]);
 
@@ -75,7 +75,7 @@
         //Gets the first free room for a given hospital, date and time
         //If none is found throw error
         public static function getFreeRoom(int $hospital_id, string $appointment_date, string $appointment_time): AppointmentsData{
-            $query = "SELECT room_id FROM rooms WHERE hospital_id = ? EXCEPT
+            $query = "SELECT room_id FROM Rooms WHERE hospital_id = ? EXCEPT
                       SELECT room_id FROM " . static::class .
                       " WHERE hospital_id = ? AND appointment_date = ? AND appointment_time = ? LIMIT 1";
             self::printQuery($query, [$hospital_id, $hospital_id, $appointment_date, $appointment_time]);

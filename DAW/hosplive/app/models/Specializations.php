@@ -10,7 +10,6 @@
         }
     }
     class Specializations extends Entity{
-        //TO DO: Remove query1 and just return success
         public static function getIdColumn(): string{
             return 'specialization_id';
         }

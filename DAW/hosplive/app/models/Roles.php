@@ -11,7 +11,7 @@
 
     class Roles extends Entity{
         public static function getAll() : array{
-            $query = "SELECT * FROM roles WHERE role_name != 'Admin'";
+            $query = "SELECT * FROM " . static::class . " WHERE role_name != 'Admin'";
             self::printQuery($query);
 
             $stm = self::$conn->prepare($query);
@@ -28,7 +28,7 @@
                 case "hospital":
                     require_once "app/models/Hospitals.php";
                     return Hospitals :: class;
-                case "pacient":
+                case "patient":
                     require_once "app/models/Patients.php";
                     return Patients :: class;
                 case "medic":
@@ -48,8 +48,8 @@
 
                     $data = array("counties" => $counties);
                     return array("route" => "app/views/auth/add_hospital.php", "data" => $data);
-                case "pacient":
-                    return array("route" => "app/views/auth/add_pacient.php", "data" => null);
+                case "patient":
+                    return array("route" => "app/views/auth/add_patient.php", "data" => null);
                 case "medic":
                     require_once "app/models/Specializations.php";
                     require_once "app/models/Counties.php";
