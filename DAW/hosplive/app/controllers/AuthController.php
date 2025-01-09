@@ -98,6 +98,16 @@
                     return;
                 }
 
+                //Making sure the user is at least 18 years old
+                $now = strtotime("now");
+                $app_datetime = strtotime($_POST["birth_date"] . " " . "00:00:00");
+                if ($now < $app_datetime + 18 * 365 * 24 * 60 * 60){
+                    $res["error"] = "User must be at least 18 years old";
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
+                
                 //Getting the user status
                 $user = Users :: getByEmail($_POST["email"]);
                 $user_status = self::getUserRegStatus($user);
@@ -126,10 +136,11 @@
                 //Insert user in database in unverified state
                 try{
                     Users :: insert($user);
-                } catch(Exception $e){
+                } catch(Throwable $e){
                     $res["error"] = $e->getMessage();
                     $res["ok"] = false;
                     echo json_encode($res);
+                    return;
                 }
 
                 //TODO: Find better way to retrieve user id after inserting them
@@ -322,12 +333,24 @@
             //Inserting the specialized user in the database
             try{
                 $chosen_model :: insert($spec_user);
-            } catch(Exception $e){
+            } catch(Throwable $e){
                 $res["error"] = $e->getMessage();
                 $res["ok"] = false;
                 echo json_encode($res);
                 return;
             }
+
+            //Giving the hospital the default number of rooms
+            require_once "app/models/Rooms.php";
+            if ($_SESSION["user_role"] == "hospital")
+                try{
+                    Rooms::insertRooms($_SESSION["user_id"]);
+                } catch(Throwable $e){
+                    $res["error"] = $e->getMessage();
+                    $res["ok"] = false;
+                    echo json_encode($res);
+                    return;
+                }
 
             //Setting the session to logged
             $_SESSION["logged"] = true;
@@ -412,10 +435,11 @@
         //Trying to verify the user
         try{
             Users :: verifyUser($user->user_id);
-        } catch(Exception $e){
+        } catch(Throwable $e){
             $res["error"] = $e->getMessage();
             $res["ok"] = false;
             echo json_encode($res);
+            return;
         }
 
         //Redirecting to specialized user page
@@ -426,7 +450,8 @@
 
     //Destroys session and redirects user to login page
     public static function logout(){
-        session_start();
+        if (session_status() === PHP_SESSION_NONE)
+            session_start();
         
         session_destroy();
         session_unset();
@@ -697,6 +722,92 @@
                 return "User is already registered";
         }
     }
+
+    public static function changePassword(){
+        self::checkLogged();
+
+        if ($_SERVER["REQUEST_METHOD"] == "GET"){
+            require_once "app/views/layout.php";
+            $csrf_token = SecurityService::generateCSRFToken();
+            require_once "app/views/auth/change_password.php";
+        }
+
+        else if ($_SERVER["REQUEST_METHOD"] == "POST"){
+            $res = ["ok" => true];
+            //Getting the unset parameters
+            $unset_parameters = array_filter(["old_password", "new_password", "confirm_password", "csrf_token", "recaptcha_input"], function($param){
+                return !isset($_POST[$param]) || $_POST[$param] == "";
+            });
+
+            //If there are unset parameters, return an error with the unset parameters
+            if (count($unset_parameters) != 0){
+                $res["error"] = "Unset parameters: " . implode(", ", $unset_parameters);
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            if (!SecurityService::checkCSRFToken($_POST["csrf_token"])){
+                $res["error"] = "Invalid CSRF token";
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            //Checking for bots
+            $grec_err = SecurityService::validateRecaptchaResp($_POST["recaptcha_input"], "change_password");
+            if ($grec_err){
+                $res["error"] = $grec_err;
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            //Getting the user from the database
+            $user = Users :: getById($_SESSION["user_id"]);
+
+            //Checking if the new password and the confirm password match
+            if (!hash_equals($_POST["new_password"], $_POST["confirm_password"])){
+                $res["error"] = "New password and confirm password do not match";
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            //Checking if the new password is different from the old password
+            if (hash_equals($_POST["old_password"], $_POST["new_password"])){
+                $res["error"] = "New password must be different from the old password";
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            //Checking if the old password is correct
+            if (!password_verify($_POST["old_password"], $user->password)){
+                $res["error"] = "Incorrect old password";
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            //Hashing the new password
+            $hashed_password = password_hash($_POST["new_password"], PASSWORD_DEFAULT);
+
+            //Updating the password in the database
+            try{
+                Users :: updatePassword($_SESSION["user_id"], $hashed_password);
+            } catch(Throwable $e){
+                $res["error"] = $e->getMessage();
+                $res["ok"] = false;
+                echo json_encode($res);
+                return;
+            }
+
+            $res["redirect"] = "/hosplive/index";
+            echo json_encode($res);
+        }
+    }
+    
     //TO DO
     public static function remove(){}
 
