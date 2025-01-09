@@ -45,7 +45,7 @@
 
     class Users extends Entity{
         public static function getByEmail(string $email) : UsersData|false{
-            $query = "SELECT * FROM users WHERE email = ?";
+            $query = "SELECT * FROM " . static::class . " WHERE email = ?";
             self::printQuery($query, [$email]);
 
             $stm = self::$conn->prepare($query);
@@ -56,7 +56,7 @@
         }
 
         public static function verifyUser(string $id) : bool{
-            $query = "UPDATE users SET verified = 1 WHERE user_id = ?";
+            $query = "UPDATE " . static::class . " SET verified = 1 WHERE user_id = ?";
             self::printQuery($query, [$id]);
 
             $stm = self::$conn->prepare($query);
@@ -69,11 +69,24 @@
         }
 
         public static function updateVerificationCode($user_id, $verif_code): bool{
-            $query = "UPDATE users SET active_code = ?, active_code_date = NOW() WHERE user_id = ?";
+            $query = "UPDATE " . static::class . " SET active_code = ?, active_code_date = NOW() WHERE user_id = ?";
             self::printQuery($query, [$verif_code, $user_id]);
 
             $stm = self::$conn->prepare($query);
             $success = $stm->execute([$verif_code, $user_id]);
+
+            $affectred_rows = $stm->rowCount();
+            if ($affectred_rows != 1)
+                throw new AffectedRowsException($affectred_rows, 1);
+            return $success;
+        }
+
+        public static function updatePassword(int $user_id, string $password): bool{
+            $query = "UPDATE " . static::class . " SET password = ? WHERE user_id = ?";
+            self::printQuery($query, [$password, $user_id]);
+
+            $stm = self::$conn->prepare($query);
+            $success = $stm->execute([$password, $user_id]);
 
             $affectred_rows = $stm->rowCount();
             if ($affectred_rows != 1)
