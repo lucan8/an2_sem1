@@ -29,7 +29,7 @@ addEventListener("DOMContentLoaded", async (event) => {
     let chosen_room_in = document.getElementById("room_id");
     let chosen_duration_in = document.getElementById("duration");
 
-    let csrf_token = document.getElementById("csrf_token");
+    let csrf_token = document.getElementById("csrf_token_make_app");
     let recaptcha_input = document.getElementById("recaptcha_input");
 
     county_input.addEventListener("input", function(event){
