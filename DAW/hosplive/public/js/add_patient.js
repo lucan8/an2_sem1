@@ -9,13 +9,13 @@ addEventListener("DOMContentLoaded", (event) =>{
             //Getting the user activity representive token and sending the form
             grecaptcha.execute(recaptcha_input.getAttribute("site_key"), { action: 'specialize' }).then((token) => {
                 recaptcha_input.value = token;
-                sendpatientForm(patient_form);
+                sendPatientForm(patient_form);
             });
         });
         
     });
 
-    function sendpatientForm(patient_form){
+    function sendPatientForm(patient_form){
         let data = new FormData(patient_form);
 
         fetch("specialize_user", {
