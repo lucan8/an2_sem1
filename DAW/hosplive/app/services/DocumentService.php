@@ -20,11 +20,7 @@
 
         public static function displayMedicCV(int $medic_user_id): string|null{
             $file_path = "documents/medics/$medic_user_id/CV.pdf";
-            if (!file_exists($file_path))
-                return "File not found";
-            header("Content-Type: application/pdf");
-            header("Content-Disposition: inline; filename=CV.pdf");
-            readfile($file_path);
+            return self::displayFile($file_path);
         }
 
         public static function storeHiringContract(string $file_key, int $hirer_user_id, int $applicant_user_id): string|null{
@@ -42,6 +38,71 @@
             return $err;
         }
 
+        public static function createAppointmentSummaryPDF(int $appointment_id, array $data): string|null{
+            $title = "Appointment Summary";
+            $storage_path = self::getAppointmentSummaryPath($appointment_id);
+
+            //Create new directory if needed
+            if (!is_dir($storage_path))
+                if (!mkdir($storage_path, 0777, true))
+                    return "Failed to create directory";
+
+            $storage_path = $storage_path . "summary.pdf";
+            //Create and store the pdf
+            self::createPDF($storage_path, $title, $data);
+            return null;
+        }
+
+        public static function displayAppointmentSummaryPDF(int $appointment_id): string|null{
+            $file_path = self::getAppointmentSummaryPath($appointment_id) . "summary.pdf";
+            return self::displayFile($file_path);
+        }
+
+        private static function displayFile(string $file_path): string|null{
+            if (!file_exists($file_path))
+                return "File not found";
+            header("Content-Type: application/pdf");
+            header("Content-Disposition: inline; filename=summary.pdf");
+            readfile($file_path);
+            return null;
+        }
+
+
+        //Creates a pdf file with the given data and stores it in the given path
+        private static function createPDF(string $storage_path, string $title, array $data){
+            require_once 'deps/FPDF/fpdf.php';
+
+            //Creating pdf
+            $pdf = new FPDF();
+            $pdf->AddPage();
+
+            //Setting the header
+            self::createPDFHeader($pdf, $title);
+            $padding = 10;
+
+            foreach ($data as $k => $v){
+                $page_width = $pdf->GetPageWidth();
+                $full_String = $k . ':    ' . $v;
+                $pdf->MultiCell($page_width - $padding, 10, $full_String, 0, 'L');
+            }
+
+            //Store the pdf in $storage_path
+            $pdf->Output($storage_path, "F");
+        }
+
+        private static function createPDFHeader($pdf, $title){
+            //Setting the header
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->Image('public/img/hosplive_logo.jpg', 0, 0, 25, 25);
+            $pdf->Cell(60);
+            $pdf->Cell(40, 10, $title);
+            $pdf->Ln(50);
+        }
+
+        public static function getAppointmentSummaryPath(int $appointment_id): string{
+            return "documents/appointments/$appointment_id/";
+        }
+        
         private static function getFileExtension(string $file_name): string{
             return substr($file_name, strrpos($file_name, ".") + 1);
         }
@@ -58,6 +119,7 @@
 
             return null;
         }
+
         private static function validateFile(string $file_key, array $accepted_formats, int $file_max_size): string|null{
             //Check if file exists
             if (!isset($_FILES[$file_key]))
