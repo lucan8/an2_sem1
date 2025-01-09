@@ -11,6 +11,7 @@
     }
 
     class Rooms extends Entity{
+        const DEFAULT_NR_ROOMS = 10;
         public function getHospitalRooms(int $hospital_id): array{
             $query = "SELECT * FROM " . static::class . " WHERE hospital_id = ?";
             self::printQuery($query, [$hospital_id]);
@@ -21,6 +22,17 @@
             $stm->execute([$hospital_id]);
 
             return $stm->fetchAll();
+        }
+
+        public static function insertRooms(int $hospital_id, int $nr_rooms = self::DEFAULT_NR_ROOMS){
+            $query = "INSERT INTO " . static::class . "(hospital_id, room_id) VALUES ";
+            for ($i = 1; $i < $nr_rooms; $i++)
+                $query .= "($hospital_id, $i),";
+            $query .= "($hospital_id, $nr_rooms)";
+
+            self::printQuery($query);
+            $stm = self::$conn->prepare($query);
+            $stm->execute();
         }
 
         //Should actually return the composite primary key
