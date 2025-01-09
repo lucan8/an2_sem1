@@ -52,7 +52,7 @@
         <input type="time" id="appointment_time" name="appointment_time">
         <input type="number" id="room_id" name="room_id">
         <input type="number" id="duration" name="duration">
-        <input type="hidden" name="csrf_token" id="csrf_token" value="<?php echo $csrf_token?>">
+        <input type="hidden" name="csrf_token" id="csrf_token_make_app" value="<?php echo $csrf_token?>">
         <input type="hidden" name="recaptcha_input" id="recaptcha_input" site_key="<?php echo Config\config_recaptcha["front_key"]?>">
     </form>
 </body>

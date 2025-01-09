@@ -28,16 +28,16 @@
                 echo "<div>Room<p>" . $appointment["room"] . "</p></div>";
                 echo "<div>Duration<p id='duration_" . $appointment["id"] . "' value='" . $appointment["duration"] . "'> " . $appointment["duration"] . "</p></div>";
                 //Viewing the summary is available for everybody
-                if ($appointment["app_info_state"] === AppointmentState::HAS_SUMMARY)
-                    echo "<button class='app_info' app_info_state='" . $appointment['app_info_state']->name . "'>" .  $appointment['app_info_state']->value . "</button>";
+                if ($appointment["app_state"] === AppointmentState::HAS_SUMMARY)
+                    echo "<button class='app_summary' app_state='" . $appointment['app_state']->name . "'>" .  $appointment['app_state']->value . "</button>";
                 else if ($_SESSION["user_role"] == "medic") //Medics can write the summary of the appointment
-                        echo "<button class='app_info' app_info_state='" . $appointment['app_info_state']->name . "'>" .  AppointmentState::FINISHED->value . "</button>";
+                        echo "<button class='app_summary' app_state='" . $appointment['app_state']->name . "'>" .  AppointmentState::FINISHED->value . "</button>";
                 echo "<button class='reset_changes'>Reset Changes</button>";
                 echo "<button class='cancel_app'>Cancel</button>";
                 echo "<button class='edit_app'>Save Changes</button>";
                 echo "</div>";
             }
-            echo "<input type='hidden' id='csrf_token' value='$csrf_token' name='csrf_token'>";
+            echo "<input type='hidden' id='csrf_token_app' value='$csrf_token' name='csrf_token'>";
             ?>
     </div>
 </body>
