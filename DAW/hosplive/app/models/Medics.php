@@ -24,15 +24,30 @@
             return $stm->fetchAll();
         }
 
+        public static function getById(int $medic_id): array|false{
+            $query = "SELECT CONCAT(u.last_name, ' ', u.first_name) as medic_name, s.specialization_name, m.years_exp
+                      FROM " . static::class . " m
+                      JOIN Users u ON m.medic_id = u.user_id 
+                      JOIN Specializations s ON s.specialization_id = m.specialization_id
+                      WHERE m.medic_id = ?";
+            self::printQuery($query, [$medic_id]);
+
+            $stm = self :: $conn->prepare($query);
+            $stm->setFetchMode(PDO::FETCH_ASSOC);
+
+            $stm->execute([$medic_id]);
+            return $stm->fetch();
+        }
+
         //Returns an array of medics from a given hospital with a given specialization
         public static function getByHospAndSpec(int $hosp_id, int $spec_id): array{
             //Complicated for now, will be simplified after medics and hospitals will use only user_ids
             $query = "SELECT concat(u.last_name,' ', u.first_name) as medic_name, m.medic_id, m.specialization_id, m.years_exp
                       FROM " . static::class . " m
-                      JOIN users u ON m.medic_id = u.user_id
-                      JOIN job_applications ja ON u.user_id = ja.applicant_id
+                      JOIN Users u ON m.medic_id = u.user_id
+                      JOIN Job_Applications ja ON u.user_id = ja.applicant_id
                       WHERE ja.hirer_id = ? AND m.specialization_id = ?
-                      AND ja.application_status_id = (SELECT application_status_id FROM application_statuses WHERE application_status_name = 'Hired')";
+                      AND ja.application_status_id = (SELECT application_status_id FROM Application_Statuses WHERE application_status_name = 'Hired')";
 
             self::printQuery($query, [$hosp_id, $spec_id]);
             
