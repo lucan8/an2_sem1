@@ -42,7 +42,7 @@ class Controller {
                 throw new Exception("No hospital found for the given county(" . $_GET["county_id"] . ")");
             else
                 $res["data"]["chosen_hospital"] = $hospital->hospital_id;
-        } catch (Exception $e){
+        } catch (Throwable $e){
             $res["error"] = $e->getMessage();
             $res["ok"] = false;
             echo json_encode($res);
@@ -53,7 +53,7 @@ class Controller {
         try{
             require_once "app/models/Medics.php";
             $res["data"]["medics"] = Medics::getByHospAndSpec($res["data"]["chosen_hospital"], (int)$_GET["spec_id"]);
-        } catch (Exception $e){
+        } catch (Throwable $e){
             $res["error"] = $e->getMessage();
             $res["ok"] = false;
         }
@@ -74,7 +74,7 @@ class Controller {
         try{
             require_once "app/models/Application_Statuses.php";
             $res["data"]["statuses"] = Application_Statuses::getAll();
-        } catch (Exception $e){
+        } catch (Throwable $e){
             $res["error"] = $e->getMessage();
             $res["ok"] = false;
         }
