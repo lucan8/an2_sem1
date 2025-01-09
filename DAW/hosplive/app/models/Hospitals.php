@@ -30,7 +30,7 @@
         //Returns an assoc array of hospitals(county_name: HospitalsData)
         public static function getHospitalsAndCounties(): array{
             $query = "SELECT h.hospital_id, c.county_name, h.county_id
-                      FROM hospitals h JOIN counties c ON h.county_id = c.county_id";
+                      FROM Hospitals h JOIN Counties c ON h.county_id = c.county_id";
             self :: printQuery($query);
 
             $stm = self :: $conn->query($query);
@@ -42,6 +42,18 @@
                 $hospitals[$row['county_name']] = new HospitalsData($row['hospital_id'], $row['county_id']);
 
             return $hospitals;
+        }
+
+        public static function getCountyName(int $hospital_id): string|false{
+            $query = "SELECT c.county_name FROM " . static::class . " h 
+                      JOIN Counties c ON h.county_id = c.county_id
+                      WHERE hospital_id = ?";
+            self :: printQuery($query, [$hospital_id]);
+
+            $stm = self :: $conn->prepare($query);
+            $stm->execute([$hospital_id]);
+
+            return $stm->fetchColumn();
         }
 
         public static function getNeccesaryRows(): array{
