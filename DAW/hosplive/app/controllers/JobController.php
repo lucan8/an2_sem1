@@ -7,19 +7,22 @@
     class JobController{
         public static function index(){
             AuthController::checkLogged();
-            require_once "app/views/layout.php";
             if ($_SESSION["user_role"] == "medic"){
+                require_once "app/views/layout.php";
                 require_once "app/models/Job_Applications.php";
                 $applications = Job_Applications::getByApplicant($_SESSION["user_id"]);
                 require_once "app/views/job/medic_applications.php";
             }
             else if ($_SESSION["user_role"] == "hospital"){
+                require_once "app/views/layout.php";
                 require_once "app/models/Job_Applications.php";
                 $applications = Job_Applications::getByHirer($_SESSION["user_id"]);
                 require_once "app/views/job/hospital_applications.php";
             }
-            else
+            else{
                 http_response_code(403);
+                return;
+            }
         }
 
         public static function apply(){
@@ -78,7 +81,7 @@
                     $app_status_id = Application_Statuses::getByName("Pending")->application_status_id;
                     Job_Applications::insert(new Job_ApplicationsData(null, $_SESSION["user_id"], $_POST["hospital_id"],
                                                                       null, $app_status_id));
-                } catch (Exception $e){
+                } catch (Throwable $e){
                     $res["error"] = $e->getMessage();
                     $res["ok"] = false;
                 }
@@ -130,7 +133,7 @@
             require "app/models/Job_Applications.php";
             try{
                 Job_Applications::updateStatus($_POST["application_id"], $_POST["new_status_id"]);
-            } catch (Exception $e){
+            } catch (Throwable $e){
                 $res["error"] = $e->getMessage();
                 $res["ok"] = false;
             }
