@@ -1,0 +1,48 @@
+CREATE OR REPLACE PROCEDURE raport_medici_din_spital(
+    p_cod_spital IN spitale.cod_spital%TYPE
+) IS
+
+    -- Varray pentru medicii din spital (maxim 10 medici)
+    TYPE medic_array_t IS VARRAY(10) OF medici.cod_medic%TYPE;
+    lista_medici medic_array_t := medic_array_t();
+
+    -- Nested Table pentru salariile medicilor
+    TYPE tabela_salarii_t IS TABLE OF spitale_medici.salariu%TYPE;
+    lista_salarii tabela_salarii_t := tabela_salarii_t();
+
+    -- Associative Array pentru specializările medicilor
+    TYPE spec_array_t IS TABLE OF specializari.nume_specializare%TYPE INDEX BY PLS_INTEGER;
+    lista_spec spec_array_t;
+
+BEGIN
+    -- Selecție a medicilor, salariilor și specializărilor din spitalul dat
+    FOR rec IN (
+        SELECT m.cod_medic, m.name AS nume_medic, hm.salariu, s.nume_specializare
+        FROM medici m
+        JOIN spitale_medici hm ON m.cod_medic = hm.cod_medic
+        JOIN specializari s ON m.cod_specializare = s.cod_specializare
+        WHERE hm.cod_spital = p_cod_spital
+    ) LOOP
+        -- Populăm lista de medici (Varray)
+        lista_medici.EXTEND;
+        lista_medici(lista_medici.COUNT) := rec.cod_medic;
+
+        -- Populăm lista salariilor (Nested Table)
+        lista_salarii.EXTEND;
+        lista_salarii(lista_salarii.COUNT) := rec.salariu;
+
+        -- Populăm lista specializărilor (Associative Array)
+        lista_spec(lista_medici.COUNT) := rec.nume_specializare;
+    END LOOP;
+
+    -- Afișarea rezultatelor
+    DBMS_OUTPUT.PUT_LINE('Medici din spitalul cu ID ' || p_cod_spital || ':');
+    FOR i IN 1 .. lista_medici.COUNT LOOP
+        DBMS_OUTPUT.PUT_LINE('Medic ID: ' || lista_medici(i) || ', Salariu: ' || lista_salarii(i) || ', Specializare: ' || lista_spec(i));
+    END LOOP;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Eroare: ' || SQLERRM);
+END get_hospital_doctors_report;
+/
