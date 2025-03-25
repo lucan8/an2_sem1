@@ -1,4 +1,3 @@
-import Data.Functor.Product (Product(Pair))
 class Collection c where
   empty :: c key value
   singleton :: key -> value -> c key value
@@ -46,6 +45,41 @@ data SearchTree key value
       (Maybe value)          -- valoarea elementului
       (SearchTree key value) -- elemente cu cheia mai mare
 
+
+instance Collection SearchTree where
+  empty = Empty
+  singleton k v = BNode Empty k (Just v) Empty
+  insert in_k in_v Empty = BNode Empty in_k (Just in_v) Empty
+  insert in_k in_v (BNode left curr_k curr_v right)
+    | in_k < curr_k = insert in_k in_v left
+    | in_k > curr_k = insert in_k in_v right
+    | in_k == curr_k = BNode left curr_k (Just in_v) right
+  
+  clookup in_k Empty = Nothing
+  clookup in_k  (BNode left curr_k curr_v right)
+    | in_k < curr_k = clookup in_k left
+    | in_k > curr_k = clookup in_k right
+    | in_k == curr_k = curr_v
+
+  delete in_k Empty = Empty
+  delete in_k  (BNode left curr_k curr_v right)
+    | in_k < curr_k = delete in_k left
+    | in_k > curr_k = delete in_k right
+    | in_k == curr_k = BNode left curr_k Nothing right
+  
+  toList Empty = []
+  toList (BNode left curr_k (Just curr_v) right) = toList left ++ [(curr_k, curr_v)] ++ toList right
+  -- Ignoring the pairs with Nothing
+  toList (BNode left curr_k Nothing right) = toList left ++ toList right
+
+
+instance Show (SearchTree Integer Integer) where
+  show Empty = ""
+  show (BNode left key (Just val) right) =  "(" ++ show key ++ " " ++ show val ++ ") " ++
+                                                show left ++ " " ++ show right
+  show (BNode left key Nothing right) = show left ++ " " ++ show right
+
+y = BNode Empty 10 (Just 7) Empty
 
 data Punct = Pt [Int]
 
@@ -107,7 +141,7 @@ instance GeoOps Geo where
 
 -- ????
 instance Eq (Geo l) where
-  (==) g1 g2 = (perimeter g1) == (perimeter g2) 
+  -- (==) g1 g2 = (perimeter g1) == (perimeter g2) 
 
 -- ghci> pi
 -- 3.141592653589793
